@@ -150,6 +150,8 @@ void BeaconModel::sortByRole(const QString &roleName)
                       // For Ascending (weaker signal first), we want -90 < -50 to be true
                       // For Descending (stronger signal first), we want -50 < -90 to be true
                       return isAscending ? (a.signal < b.signal) : (a.signal > b.signal);
+                  case BSSColorRole:
+                      return isAscending ? (a.bss_color < b.bss_color) : (a.bss_color > b.bss_color);
                   default:
                       // Fallback comparison (e.g., by BSSID)
                       return isAscending ? (a.bssid < b.bssid) : (a.bssid > b.bssid);
