@@ -128,6 +128,7 @@ ApplicationWindow {
                     text: "Generation"
                     font.bold: true
                 }
+
             }
             Rectangle {
                 Layout.preferredWidth: columnWidths[4]
@@ -137,6 +138,10 @@ ApplicationWindow {
                     anchors.centerIn: parent
                     text: "BSS"
                     font.bold: true
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: headerRow.sortTable("bsscolor") // role name
                 }
             }
             Rectangle {
@@ -288,11 +293,13 @@ ApplicationWindow {
                         }
                     }
                     Rectangle {
-                        color: "transparent"
+                        // color: model.bsscolordisable?"gray":"transparent"
+                        color:"transparent"
                         Layout.preferredWidth: columnWidths[4]
                         Layout.fillHeight: true
                         TextEdit {
-                            text: model.bsscolordisable?model.bsscolor:""
+                            // text: model.bsscolordisable?"":model.bsscolor?model.bsscolor:""
+                            text:model.bsscolor?model.bsscolor:""
                             color: model.bsscolordisable?"gray":"black"
                             readOnly: true
                             selectByMouse: true

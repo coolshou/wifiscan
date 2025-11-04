@@ -229,27 +229,35 @@ void parse_beacon_ies(const unsigned char *data, int data_len, BeaconDetail *det
             }
             if (extended_id == 36) {
                 // Ext Tag Number: Tag 255, HE Operation (36)
-                // The HE Operation Information starts at pos + 3
+                // extended_id(1)+HE Operation Information(3)+BSS color(1)+HE-MCS(2)
+
+                // The HE Operation Information starts at pos + 3 (len 3)
                 // Byte 0 of HE Op Info (pos[3]) contains the BSS Color
-                unsigned char he_op_info_byte_0 = pos[3];
+                unsigned char he_op_info_byte_0 = pos[6];
+                // qDebug("[%s]he_op_info_byte_0: 0x%02hhx",
+                //        detail->ssid.toUtf8().constData(),
+                //        he_op_info_byte_0);
 
                 // The BSS Color is the lower 6 bits (Bits 0-5)
                 // We use a bitwise AND with 0x3F (binary 0011 1111) to mask the value.
                 int bss_color = (int)(he_op_info_byte_0 & 0x3F);
                 detail->bss_color = bss_color;
+                // qDebug() << "bss_color:" << bss_color;
                 // .0.. .... = Partial BSS Color: (Bit 6)
                 bool is_Partial = (he_op_info_byte_0 & 0x40) != 0;
                 detail->bss_color_partial = is_Partial;
                 // Optional: Check the BSS Color Disabled flag (Bit 7)
                 bool is_disabled = (he_op_info_byte_0 & 0x80) != 0;
                 detail->bss_color_disable = is_disabled;
-                // if (bss_color > 0) {
-                //     qDebug() << "BSS Color Found:" << bss_color
-                //              << " (Disabled:" << (is_disabled ? "Yes)" : "No)");
-                // } else {
-                //     // BSS Color value 0 means BSS Coloring is not used.
-                //     qDebug() << "BSS Coloring is not used (Value is 0)";
-                // }
+                if (bss_color > 0) {
+                    qDebug() << "[" << detail->ssid << "]"
+                             <<" BSS Color Found:" << bss_color
+                             << " (Disabled:" << (is_disabled ? "Yes)" : "No)");
+                } else {
+                    // BSS Color value 0 means BSS Coloring is not used.
+                    qDebug() << "BSS Coloring is not used (Value is 0)";
+                }
+                // Basic HE-MCS and NSS Set: 0xfffc
             }
 
             if (extended_id == 108) {
