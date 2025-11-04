@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("imageProvider", &provider);
 
     // engine.addImportPath("qrc:///image/");
+    // since Qt6.5
     engine.loadFromModule("wifiscanner", "Main");
 
     return app.exec();

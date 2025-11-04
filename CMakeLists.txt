@@ -25,6 +25,13 @@ endif()
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick)
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
 qt_standard_project_setup(REQUIRES 6.5)
+if (Qt6Core_FOUND)
+    if (Qt6Core_VERSION VERSION_LESS 6.5.0)
+        message(FATAL_ERROR "Minimum supported Qt6 version is 6.5.0!")
+    endif()
+else()
+    message(SEND_ERROR "The Qt6Core library could not be found!")
+endif()
 
 # qt_add_resources(${APP_NAME} "wifiscan.qrc")
 qt_add_executable(${APP_NAME} WIN32
