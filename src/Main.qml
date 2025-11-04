@@ -251,7 +251,12 @@ ApplicationWindow {
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
                                 fillMode: Image.PreserveAspectFit
-                                ToolTip.text: "802.11n" //TODO: not work to show tip on mouse hovered
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    ToolTip.text: "802.11n"
+                                    ToolTip.visible: containsMouse
+                                }
                             }
                             Image {
                                 visible: model.is11ac
@@ -259,11 +264,12 @@ ApplicationWindow {
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
                                 fillMode: Image.PreserveAspectFit
-                                ToolTip.text: "802.11ac"
-                                // ToolTip.visible: hovered
-                                // MouseArea {
-                                //     anchors.fill: parent
-                                // }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    ToolTip.text: "802.11ac"
+                                    ToolTip.visible: containsMouse
+                                }
                             }
                             Image {
                                 visible: model.is11ax
@@ -271,10 +277,11 @@ ApplicationWindow {
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
                                 fillMode: Image.PreserveAspectFit
-                                ToolTip.text: "802.11ax"
-                                // ToolTip.visible: hovered
                                 MouseArea {
                                     anchors.fill: parent
+                                    hoverEnabled: true
+                                    ToolTip.text: "802.11ax"
+                                    ToolTip.visible: containsMouse
                                 }
                             }
                             Image {
@@ -283,11 +290,13 @@ ApplicationWindow {
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
                                 fillMode: Image.PreserveAspectFit
-                                ToolTip.text: "802.11be"
-                                // ToolTip.visible: hovered
                                 MouseArea {
                                     anchors.fill: parent
+                                    hoverEnabled: true
+                                    ToolTip.text: "802.11be"
+                                    ToolTip.visible: containsMouse
                                 }
+
                             }
                             Item { Layout.fillWidth: true } // 填滿剩餘空間，將圖示靠左對齊
                         }
