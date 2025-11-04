@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=@PROJECT_NAME@
+Exec=pkexec env DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY @CMAKE_INSTALL_PREFIX@/bin/@PROJECT_NAME@
+Icon=@PROJECT_NAME@
+Terminal=false
+Categories=Utility;Network
+StartupWMClass=wifiscan

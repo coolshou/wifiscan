@@ -1,0 +1,3 @@
+// 將 app_icon.ico 圖示定義為 IDI_ICON1 資源
+// 確保 app_icon.ico 檔案與 appicon.rc 位於同一個目錄，或使用正確的相對路徑
+IDI_ICON1 ICON "image/wifi.ico"

@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/image">
+        <file alias="wifiscan_png">images/wifiscan.png</file>
+        <file alias="wifiscan_ico">images/wifiscan.ico</file>
+        <file alias="wifi4">images/wifi4.png</file>
+        <file alias="wifi5">images/wifi5.png</file>
+        <file alias="wifi6">images/wifi6.png</file>
+        <file alias="wifi6e">images/wifi6e.png</file>
+        <file alias="wifi7">images/wifi7.png</file>
+        <file alias="wifi8">images/wifi8.png</file>
+    </qresource>
+    <qresource prefix="/wifiscan">
+        <file>src/Main.qml</file>
+        <file>src/Detail.qml</file>
+    </qresource>
+</RCC>
