@@ -40,6 +40,7 @@ QVariant BeaconModel::data(const QModelIndex &index, int role) const {
 }
 
 QHash<int, QByteArray> BeaconModel::roleNames() const {
+    //rule name
     return {
         { SsidRole, "ssid" },
         { BssidRole, "bssid" },
