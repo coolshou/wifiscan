@@ -22,7 +22,8 @@ if(NOT EXISTS ${ICON_FILE_PATH})
     message(FATAL_ERROR "wifi.ico not found : ${ICON_FILE_PATH}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick)
+find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
 qt_standard_project_setup(REQUIRES 6.5)
 if (Qt6Core_FOUND)
@@ -46,6 +47,8 @@ qt_add_executable(${APP_NAME} WIN32
     ${APP_SOURCES}
 )
 
+
+target_link_libraries(wifiscanner PRIVATE Qt6::Core)
 if(ANDROID)
     set_property(TARGET ${APP_NAME} PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/android)
     set(ANDROID_JAVA_SOURCES
@@ -66,6 +69,7 @@ qt_add_qml_module(${APP_NAME}
     QML_FILES src/Main.qml
     QML_FILES src/Detail.qml
     RESOURCES wifiscan.qrc
+    SOURCES src/beaconfilterproxymodel.h src/beaconfilterproxymodel.cpp
 )
 
 

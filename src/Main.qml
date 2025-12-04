@@ -63,7 +63,111 @@ ApplicationWindow {
                 }
             }
         }
-        // 🔹 Header Row
+        // filter Row
+        RowLayout {
+            id: filterRow
+            Layout.fillWidth: true
+            Layout.preferredHeight: 30
+            height: 30
+            spacing: 4
+            Rectangle {
+                Layout.preferredWidth: columnWidths[0]
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+                TextInput {
+                    id: filterMac
+                    anchors.fill: parent // <-- Fills the parent Rectangle
+                    verticalAlignment: Text.AlignVCenter // Use verticalAlignment to center the text content
+                    // Add this property for the grayed-out hint
+                    // 1. Define the placeholder text
+                    property string hintText: "Filter Mac Address"
+                    // 2. Set the initial text and color to the placeholder style
+                    text: hintText
+                    color: "gray" // Placeholder color
+                    // 3. Logic for when the user clicks/focuses on the input
+                    onFocusChanged: {
+                        if (focus) {
+                            // When focused, if text is the placeholder, clear it and set normal color
+                            if (text === hintText) {
+                                text = ""
+                                color = "black"
+                            }
+                        } else {
+                            // When focus is lost, if text is empty, reset to placeholder text and color
+                            if (text === "") {
+                                text = hintText
+                                color = "gray"
+                            }
+                        }
+                    }
+                    // The core logic to detect text changes and apply the filter
+                    onTextChanged: {
+                        if (text !== hintText) {
+                            beaconFilterModel.setMacFilter(text)
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+                TextInput {
+                    id: filterSSID
+                    anchors.fill: parent // <-- Fills the parent Rectangle
+                    verticalAlignment: Text.AlignVCenter
+                    // Add this property for the grayed-out hint
+                    property string hintText: "Filter SSID"
+                    text: hintText
+                    color: "gray" // Placeholder color
+                    onFocusChanged: {
+                        if (focus) {
+                            // When focused, if text is the placeholder, clear it and set normal color
+                            if (text === hintText) {
+                                text = ""
+                                color = "black"
+                            }
+                        } else {
+                            // When focus is lost, if text is empty, reset to placeholder text and color
+                            if (text === "") {
+                                text = hintText
+                                color = "gray"
+                            }
+                        }
+                    }
+                    // The core logic to detect text changes and apply the filter
+                    onTextChanged: {
+                        if (text !== hintText) {
+                            beaconFilterModel.setSSIDFilter(text)
+                            console.log("SSID filter applied:", text)
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                Layout.preferredWidth: columnWidths[2]
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+            }
+            Rectangle {
+                Layout.preferredWidth: columnWidths[3]
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+            }
+            // Rectangle {
+            //     Layout.preferredWidth: columnWidths[4]
+            //     Layout.preferredHeight: filterRow.Layout.preferredHeight
+            // }
+            Rectangle {
+                Layout.preferredWidth: columnWidths[4]+columnWidths[5]
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+                Button {
+                    text: "Filter"
+                    width: parent.width
+                    height: parent.height
+                    onClicked: {
+                        debugPopup.text = "TODO: set filter"
+                    }
+                }
+            }
+        }
+        // Header Row
         RowLayout {
             id: headerRow
             Layout.fillWidth: true
@@ -155,12 +259,13 @@ ApplicationWindow {
                 }
             }
         }
-        // 🔹 TableView with delegate
+        // TableView with delegate
         TableView {
             id: beaconTableView
             Layout.fillWidth: true
             Layout.fillHeight: true
-            model: beaconModel
+            // model: beaconModel
+            model: beaconFilterModel
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar {}

@@ -8,6 +8,7 @@
 #ifdef IS_DESKTOP_LINUX
 #include "src/beaconmodel.h"
 #endif
+#include "src/beaconfilterproxymodel.h"
 #include "src/interfacemodel.h"
 #include "src/imageprovider.h"
 
@@ -41,9 +42,12 @@ int main(int argc, char *argv[])
 #endif
     // Connect the success signal to print results
 #ifdef IS_DESKTOP_LINUX
-    BeaconModel *model = new BeaconModel;
+    BeaconModel *model = new BeaconModel(&app);
     QObject::connect(scanner, &WifiScanner::scanFinished, model, &BeaconModel::setBeacons);
 #endif
+    BeaconFilterProxyModel *filterProxy = new BeaconFilterProxyModel(&app);
+    filterProxy->setSourceModel(model);
+
     // Connect the error signal to report issues
     // QObject::connect(scanner, &WifiScanner::error,
     //                  [&app](const QString &message) {
@@ -63,6 +67,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<BeaconModel>("Wireless", 1, 0, "BeaconModel");
     engine.rootContext()->setContextProperty("beaconModel", model);
 #endif
+    engine.rootContext()->setContextProperty("beaconFilterModel", filterProxy);
+
     // qmlRegisterType<InterfaceModel>("Wireless", 1, 0, "InterfaceModel");
     engine.rootContext()->setContextProperty("interfaceModel", interfaceModel);
     engine.rootContext()->setContextProperty("wifiScanner", scanner);
