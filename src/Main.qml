@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 2.15
+import "."
 
 ApplicationWindow {
     id: mainWindow
@@ -17,20 +18,25 @@ ApplicationWindow {
 
         RowLayout {
             spacing: 12
-            width: parent.width
+            // width: parent.width
             height: 40
 
             ComboBox {
                 id: ifaceSelector
                 model: interfaceModel
                 textRole: "display"
-                Layout.preferredWidth: parent.width * 0.5
+                // Layout.preferredWidth: parent.width * 0.5
+                Layout.fillWidth: true
+                Layout.preferredWidth: 400 // 設定一個合理的基礎寬度
+                Layout.maximumWidth: parent.width * 0.5
             }
             BusyIndicator {
                 running: wifiScanner.busy
                 visible: wifiScanner.busy
-                Layout.preferredHeight: parent.height * 0.9
-                Layout.preferredWidth: Layout.preferredHeight
+                // Layout.preferredHeight: parent.height * 0.9
+                // Layout.preferredWidth: Layout.preferredHeight
+                Layout.preferredHeight: 24
+                Layout.preferredWidth: 24
                 Layout.alignment: Qt.AlignVCenter
             }
             Button {
@@ -352,7 +358,7 @@ ApplicationWindow {
 
                             Image {
                                 visible: model.is11n
-                                source: "qrc:///image/wifi4"
+                                source: "qrc:/image/wifi4"
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
                                 fillMode: Image.PreserveAspectFit
@@ -365,7 +371,7 @@ ApplicationWindow {
                             }
                             Image {
                                 visible: model.is11ac
-                                source: "qrc:///image/wifi5"
+                                source: "qrc:/image/wifi5"
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
                                 fillMode: Image.PreserveAspectFit
@@ -378,7 +384,7 @@ ApplicationWindow {
                             }
                             Image {
                                 visible: model.is11ax
-                                source: "qrc:///image/wifi6"
+                                source: "qrc:/image/wifi6"
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
                                 fillMode: Image.PreserveAspectFit
@@ -391,7 +397,7 @@ ApplicationWindow {
                             }
                             Image {
                                 visible: model.is11be
-                                source: "qrc:///image/wifi7"
+                                source: "qrc:/image/wifi7"
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
                                 fillMode: Image.PreserveAspectFit
@@ -520,7 +526,7 @@ ApplicationWindow {
         function onScanFinished() {
             debugPopup.close()
             //TODO: can not call c++
-            console.debug("sitesurveys", beaconTableView.model.count())
+            // console.debug("sitesurveys", beaconTableView.model.count())
             // sitesurveys.text = beaconTableView.model.count()
         }
         function onError(msg) {

@@ -9,8 +9,5 @@
         <file alias="wifi7">images/wifi7.png</file>
         <file alias="wifi8">images/wifi8.png</file>
     </qresource>
-    <qresource prefix="/wifiscan">
-        <file>src/Main.qml</file>
-        <file>src/Detail.qml</file>
-    </qresource>
+    <qresource prefix="/wifiscan"/>
 </RCC>

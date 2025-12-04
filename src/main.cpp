@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QStringListModel>
 #include <QIcon>
+#include <QDirIterator>
 
 #include "src/wifiscanner.h"
 #ifdef IS_DESKTOP_LINUX
@@ -19,6 +20,19 @@
 #endif
 #endif
 
+void listQrcFiles()
+{
+    // 使用 ":" 作為根目錄，表示遍歷整個資源系統
+    // QDirIterator::Subdirectories 確保遍歷所有子目錄
+    QDirIterator it(":", QDirIterator::Subdirectories);
+
+    qDebug() << "--- 列出 QRC 資原始檔 ---";
+    while (it.hasNext()) {
+        // next() 返回下一個資源的完整路徑（例如：":/prefix/path/file.png"）
+        qDebug() << it.next();
+    }
+    qDebug() << "--- 列表結束 ---";
+}
 
 int main(int argc, char *argv[])
 {
@@ -77,7 +91,9 @@ int main(int argc, char *argv[])
 
     // engine.addImportPath("qrc:///image/");
     // since Qt6.5
-    engine.loadFromModule("wifiscanner", "Main");
-
+    // engine.loadFromModule("wifiscanner", "Main");
+    // before qt6.4
+    engine.load(QUrl(QStringLiteral("qrc:/wifiscanner/src/Main.qml")));
+    listQrcFiles();// for debug
     return app.exec();
 }

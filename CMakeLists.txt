@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(wifiscan VERSION 0.1 LANGUAGES CXX)
+project(wifiscanner VERSION 0.1 LANGUAGES CXX)
 set(APP_NAME wifiscanner)
 
 set(CMAKE_AUTORCC ON)
@@ -25,16 +25,16 @@ endif()
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
-qt_standard_project_setup(REQUIRES 6.5)
-if (Qt6Core_FOUND)
-    if (Qt6Core_VERSION VERSION_LESS 6.5.0)
-        message(FATAL_ERROR "Minimum supported Qt6 version is 6.5.0!")
-    endif()
-else()
-    message(SEND_ERROR "The Qt6Core library could not be found!")
-endif()
+# qt_standard_project_setup(REQUIRES 6.5)
+# if (Qt6Core_FOUND)
+#     if (Qt6Core_VERSION VERSION_LESS 6.5.0)
+#         message(FATAL_ERROR "Minimum supported Qt6 version is 6.5.0!")
+#     endif()
+# else()
+#     message(SEND_ERROR "The Qt6Core library could not be found!")
+# endif()
 
-# qt_add_resources(${APP_NAME} "wifiscan.qrc")
+#
 qt_add_executable(${APP_NAME} WIN32
     src/main.cpp
     src/wifiscanner.h src/wifiscanner.cpp
@@ -47,8 +47,7 @@ qt_add_executable(${APP_NAME} WIN32
     ${APP_SOURCES}
 )
 
-
-target_link_libraries(wifiscanner PRIVATE Qt6::Core)
+target_link_libraries(${APP_NAME} PRIVATE Qt6::Core)
 if(ANDROID)
     set_property(TARGET ${APP_NAME} PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/android)
     set(ANDROID_JAVA_SOURCES
