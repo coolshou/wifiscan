@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QStringListModel>
 #include <QIcon>
+#include <QQuickStyle>
 #include <QDirIterator>
 
 #include "src/wifiscanner.h"
@@ -37,6 +38,7 @@ void listQrcFiles()
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    QQuickStyle::setStyle("Fusion"); // 設定主題為 Fusion
     app.setApplicationName("wifiscan");
     app.setWindowIcon(QIcon(":/image/wifiscan_png"));
     // IMPORTANT: Change "wlan0" to your actual wireless interface name (e.g., wlp3s0)
@@ -94,6 +96,6 @@ int main(int argc, char *argv[])
     // engine.loadFromModule("wifiscanner", "Main");
     // before qt6.4
     engine.load(QUrl(QStringLiteral("qrc:/wifiscanner/src/Main.qml")));
-    listQrcFiles();// for debug
+    // listQrcFiles();// for debug
     return app.exec();
 }

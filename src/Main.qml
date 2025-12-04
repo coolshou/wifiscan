@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 2.15
+import QtQuick.Window 2.15
 import "."
 
 ApplicationWindow {
@@ -9,7 +10,7 @@ ApplicationWindow {
     height: 480
     visible: true
     minimumWidth: 800
-    title: qsTr("WiFi scan")
+    title: qsTr("WiFi scanner")
     property var columnWidths: [150, -1, 100, 120, 30, 30]
 
     ColumnLayout {
@@ -149,29 +150,30 @@ ApplicationWindow {
                 }
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths[2]
+                Layout.preferredWidth: columnWidths[2]+columnWidths[3]+columnWidths[4]+columnWidths[5]+12
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
-            }
-            Rectangle {
-                Layout.preferredWidth: columnWidths[3]
-                Layout.preferredHeight: filterRow.Layout.preferredHeight
+                color: "#ddd"
             }
             // Rectangle {
-            //     Layout.preferredWidth: columnWidths[4]
+            //     Layout.preferredWidth: columnWidths[3]
             //     Layout.preferredHeight: filterRow.Layout.preferredHeight
             // }
-            Rectangle {
-                Layout.preferredWidth: columnWidths[4]+columnWidths[5]
-                Layout.preferredHeight: filterRow.Layout.preferredHeight
-                Button {
-                    text: "Filter"
-                    width: parent.width
-                    height: parent.height
-                    onClicked: {
-                        debugPopup.text = "TODO: set filter"
-                    }
-                }
-            }
+            // Rectangle {
+            //     Layout.preferredWidth: columnWidths[4]+columnWidths[5]
+            //     Layout.preferredHeight: filterRow.Layout.preferredHeight
+            // }
+            // Rectangle {
+            //     Layout.preferredWidth: columnWidths[4]+columnWidths[5]
+            //     Layout.preferredHeight: filterRow.Layout.preferredHeight
+            //     Button {
+            //         text: "Filter"
+            //         width: parent.width
+            //         height: parent.height
+            //         onClicked: {
+            //             debugPopup.text = "TODO: set filter"
+            //         }
+            //     }
+            // }
         }
         // Header Row
         RowLayout {
@@ -260,7 +262,7 @@ ApplicationWindow {
                 color: "#ddd"
                 Text {
                     anchors.centerIn: parent
-                    text: "..."
+                    text: ""
                     font.bold: true
                 }
             }
@@ -281,6 +283,7 @@ ApplicationWindow {
                 implicitHeight: 50
                 implicitWidth: beaconTableView.width
                 color: index % 2 === 0 ? "#fcf6c6" : "#ffffff"
+                // Qt.lighter(Control.background, 1.1)
                 border.color: "#dddddd"
                 border.width: 1
                 radius: 4

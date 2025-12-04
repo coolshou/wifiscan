@@ -23,6 +23,7 @@ if(NOT EXISTS ${ICON_FILE_PATH})
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
+find_package(Qt6 REQUIRED COMPONENTS QuickControls2)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
 # qt_standard_project_setup(REQUIRES 6.5)
@@ -44,8 +45,11 @@ qt_add_executable(${APP_NAME} WIN32
     src/imageprovider.h
     src/utf8utils.cpp src/utf8utils.h
     src/wifiutils.cpp src/wifiutils.h
+    src/beaconfilterproxymodel.cpp src/beaconfilterproxymodel.h
     ${APP_SOURCES}
 )
+qt_add_resources(wifiscan_resource_files wifiscan.qrc)
+target_sources(${APP_NAME} PRIVATE ${wifiscan_resource_files})
 
 target_link_libraries(${APP_NAME} PRIVATE Qt6::Core)
 if(ANDROID)
@@ -67,8 +71,7 @@ qt_add_qml_module(${APP_NAME}
     VERSION 1.0
     QML_FILES src/Main.qml
     QML_FILES src/Detail.qml
-    RESOURCES wifiscan.qrc
-    SOURCES src/beaconfilterproxymodel.h src/beaconfilterproxymodel.cpp
+
 )
 
 
@@ -87,7 +90,7 @@ if (UNIX AND NOT ANDROID)
     target_compile_definitions(${APP_NAME} PRIVATE IS_DESKTOP_LINUX)
     # install icon
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/images/wifiscan.png"
-                DESTINATION "/usr/share/icons/hicolor/256x256/apps"
+                DESTINATION "share/icons/hicolor/256x256/apps"
                 RENAME "${PROJECT_NAME}.png"
         )
     # install .desktop
@@ -101,6 +104,10 @@ if (UNIX AND NOT ANDROID)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.desktop"
         DESTINATION "share/applications"
     )
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/tw.idv.coolshou.wifiscanner.policy"
+        DESTINATION "share/polkit-1/actions"
+    )
+
 
 endif()
 if (ANDROID)
@@ -124,6 +131,7 @@ target_link_libraries(${APP_NAME}
       Qt6::Core
       Qt6::Qml
       Qt6::Quick
+      Qt6::QuickControls2
 )
 # target_link_libraries(${APP_NAME}
 #     PRIVATE
