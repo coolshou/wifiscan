@@ -11,7 +11,11 @@ ApplicationWindow {
     visible: true
     minimumWidth: 800
     title: qsTr("WiFi scanner")
-    property var columnWidths: [150, -1, 100, 120, 30, 30]
+    // property var columnWidths: [150, -1, 40, 120, 120, 30, 30]
+    property var columnWidths: {"bssid": 150, "ssid": -1,
+                                "rssi": 40, "freq": 120,
+                                "generation": 120, "bss": 30,
+                                "more": 30}
 
     ColumnLayout {
         anchors.fill: parent
@@ -78,7 +82,7 @@ ApplicationWindow {
             height: 30
             spacing: 4
             Rectangle {
-                Layout.preferredWidth: columnWidths[0]
+                Layout.preferredWidth: columnWidths["bssid"]
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
                 TextInput {
                     id: filterMac
@@ -150,20 +154,91 @@ ApplicationWindow {
                 }
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths[2]+columnWidths[3]+columnWidths[4]+columnWidths[5]+12
+                Layout.preferredWidth: columnWidths["rssi"]
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+                TextInput {
+                    id: filterRSSI
+                    anchors.fill: parent // <-- Fills the parent Rectangle
+                    verticalAlignment: Text.AlignVCenter
+                    // Add this property for the grayed-out hint
+                    property string hintText: "Filter RSSI"
+                    // text: hintText
+                    // color: "gray" // Placeholder color
+                    // onFocusChanged: {
+                    //     if (focus) {
+                    //         // When focused, if text is the placeholder, clear it and set normal color
+                    //         if (text === hintText) {
+                    //             text = ""
+                    //             color = "black"
+                    //         }
+                    //     } else {
+                    //         // When focus is lost, if text is empty, reset to placeholder text and color
+                    //         if (text === "") {
+                    //             text = hintText
+                    //             color = "gray"
+                    //         }
+                    //     }
+                    // }
+                    // The core logic to detect text changes and apply the filter
+                    // Limits input to integer values between -120 and 0
+                    // This physically prevents typing any positive number starting with 1-9
+                    validator: RegularExpressionValidator {
+                        regularExpression: /^(-\d*|0)$/
+                    }
+                    onEditingFinished: {
+                        // Final safety check: if value is < -120, reset it
+                        if (parseInt(text) < -120) {
+                            //TODO: notice only allow 0~-120
+                            text = "-120"
+                        }
+                    }
+                    onTextChanged: {
+                        if (text !== hintText) {
+                            // beaconFilterModel.setSSIDFilter(text)
+                            console.log("RSSI filter applied:", text)
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                Layout.preferredWidth: columnWidths["freq"]
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+                // This component prevents the overlap
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: -8 // Adjust this to change the gap between checkboxes
+                    CheckBox {
+                        text: "2G"
+                        id: filter2G
+                        font.pixelSize: 10
+                        onCheckedChanged: console.log("2.4G status:", checked)
+                    }
+                    CheckBox {
+                        text: "5G"
+                        id: filter5G
+                        font.pixelSize: 10
+                        onCheckedChanged: console.log("5G status:", checked)
+                    }
+                    CheckBox {
+                        text: "6G"
+                        id: filter6G
+                        font.pixelSize: 10
+                        onCheckedChanged: console.log("6G status:", checked)
+                    }
+                }
+            }
+            Rectangle {
+                Layout.preferredWidth: columnWidths["generation"]+columnWidths["bss"]+columnWidths["more"]+8
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
                 color: "#ddd"
             }
+
             // Rectangle {
-            //     Layout.preferredWidth: columnWidths[3]
+            //     Layout.preferredWidth: columnWidths["generation"]+columnWidths["bss"]
             //     Layout.preferredHeight: filterRow.Layout.preferredHeight
             // }
             // Rectangle {
-            //     Layout.preferredWidth: columnWidths[4]+columnWidths[5]
-            //     Layout.preferredHeight: filterRow.Layout.preferredHeight
-            // }
-            // Rectangle {
-            //     Layout.preferredWidth: columnWidths[4]+columnWidths[5]
+            //     Layout.preferredWidth: columnWidths["generation"]+columnWidths["bss"]
             //     Layout.preferredHeight: filterRow.Layout.preferredHeight
             //     Button {
             //         text: "Filter"
@@ -189,7 +264,7 @@ ApplicationWindow {
                 }
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths[0]
+                Layout.preferredWidth: columnWidths["bssid"]
                 Layout.preferredHeight: headerRow.Layout.preferredHeight
                 color: "#ddd"
                 Text {
@@ -217,12 +292,13 @@ ApplicationWindow {
                 }
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths[2]
+                Layout.preferredWidth: columnWidths["rssi"]
                 Layout.preferredHeight: headerRow.Layout.preferredHeight
                 color: "#ddd"
                 Text {
                     anchors.centerIn: parent
-                    text: "Freq\nSignal"
+                    text: "RSSI"
+                    font.family: "Noto Sans Coptic"
                     font.bold: true
                 }
                 MouseArea {
@@ -232,7 +308,22 @@ ApplicationWindow {
                 }
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths[3]
+                Layout.preferredWidth: columnWidths["freq"]
+                Layout.preferredHeight: headerRow.Layout.preferredHeight
+                color: "#ddd"
+                Text {
+                    anchors.centerIn: parent
+                    text: "Freq"
+                    font.bold: true
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    // Sorting by two fields is complex. You might choose signal or freq as primary.
+                    onClicked: headerRow.sortTable("signal") // 'signal' is assumed role name
+                }
+            }
+            Rectangle {
+                Layout.preferredWidth: columnWidths["generation"]
                 Layout.preferredHeight: headerRow.Layout.preferredHeight
                 color: "#ddd"
                 Text {
@@ -243,7 +334,7 @@ ApplicationWindow {
 
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths[4]
+                Layout.preferredWidth: columnWidths["bss"]
                 Layout.preferredHeight: headerRow.Layout.preferredHeight
                 color: "#ddd"
                 Text {
@@ -257,7 +348,7 @@ ApplicationWindow {
                 }
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths[5]
+                Layout.preferredWidth: columnWidths["more"]
                 Layout.preferredHeight: headerRow.Layout.preferredHeight
                 color: "#ddd"
                 Text {
@@ -291,9 +382,9 @@ ApplicationWindow {
                 RowLayout {
                     anchors.fill: parent
                     spacing: 4
-
+                    // BSSID
                     Rectangle {
-                        Layout.preferredWidth: columnWidths[0]
+                        Layout.preferredWidth: columnWidths["bssid"]
                         Layout.fillHeight: true
                         color: "transparent"
                         // color: "#f0f0f0"
@@ -307,8 +398,10 @@ ApplicationWindow {
                             font.pointSize: 12
                             anchors.fill: parent
                             anchors.margins: 4
+                            verticalAlignment: TextEdit.AlignVCenter
                         }
                     }
+                    // SSID
                     Rectangle {
                         color: "transparent"
                         // Layout.preferredWidth: ssidColumnWidth
@@ -321,25 +414,39 @@ ApplicationWindow {
                             wrapMode: TextEdit.NoWrap
                             font.pointSize: 12
                             anchors.fill: parent
+                            verticalAlignment: TextEdit.AlignVCenter
                         }
                     }
+                    // RSSI
+                    Rectangle {
+                        Layout.preferredWidth: columnWidths["rssi"]
+                        Layout.fillHeight: true
+                        color: "transparent"
+                        // color: "#f0f0f0"
+                        radius: 4
+                        TextEdit {
+                            text: model.signal
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: TextEdit.NoWrap
+                            font.bold: true
+                            font.pointSize: 12
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            verticalAlignment: TextEdit.AlignVCenter
+                        }
+                    }
+                    // Freq
                     Rectangle {
                         color: "transparent"
-                        Layout.preferredWidth: columnWidths[2]
+                        Layout.preferredWidth: columnWidths["freq"]
                         Layout.fillHeight: true
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 4
                             spacing: 2
                             TextEdit {
-                                text: model.frequency + " MHz("+model.channel+")"
-                                readOnly: true
-                                selectByMouse: true
-                                wrapMode: TextEdit.NoWrap
-                                font.pointSize: 10
-                            }
-                            TextEdit {
-                                text: model.signal + " dBm"
+                                text: model.frequency + " MHz ("+model.channel+")"
                                 readOnly: true
                                 selectByMouse: true
                                 wrapMode: TextEdit.NoWrap
@@ -347,9 +454,10 @@ ApplicationWindow {
                             }
                         }
                     }
+                    // Generation
                     Rectangle {
                         color: "transparent"
-                        Layout.preferredWidth: columnWidths[3]
+                        Layout.preferredWidth: columnWidths["generation"]
                         Layout.fillHeight: true
                         // color: "red"
                         // 使用 RowLayout 輕鬆排列多個圖示
@@ -415,10 +523,11 @@ ApplicationWindow {
                             Item { Layout.fillWidth: true } // 填滿剩餘空間，將圖示靠左對齊
                         }
                     }
+                    // BSS color
                     Rectangle {
                         // color: model.bsscolordisable?"gray":"transparent"
                         color:"transparent"
-                        Layout.preferredWidth: columnWidths[4]
+                        Layout.preferredWidth: columnWidths["bss"]
                         Layout.fillHeight: true
                         TextEdit {
                             // text: model.bsscolordisable?"":model.bsscolor?model.bsscolor:""
@@ -429,11 +538,13 @@ ApplicationWindow {
                             wrapMode: TextEdit.NoWrap
                             font.pointSize: 12
                             anchors.fill: parent
+                            verticalAlignment: TextEdit.AlignVCenter
                         }
                     }
+                    // more button
                     Rectangle {
                         color: "transparent"
-                        Layout.preferredWidth: columnWidths[5]
+                        Layout.preferredWidth: columnWidths["bss"]
                         Layout.fillHeight: true
                         Button {
                             anchors.centerIn: parent
