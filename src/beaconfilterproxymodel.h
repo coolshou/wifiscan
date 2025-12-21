@@ -17,10 +17,12 @@ public:
     QString ssidFilter() const { return m_ssidFilter; }
     Q_SLOT void setSSIDFilter(const QString &filter);
     Q_SLOT void setRSSIFilter(const QString &filter);
+    Q_SLOT void setFreqFilter(const QString &filter);
 signals:
     void macFilterChanged();
     void ssidFilterChanged();
     void rssiFilterChanged();
+    void freqFilterChanged();
 
 protected:
     // This is where all filter checks are performed
@@ -29,7 +31,8 @@ protected:
 private:
     QString m_macFilter;
     QString m_ssidFilter;
-    QString m_rssiFilter;
+    double m_rssiFilter;
+    QString m_freqFilter;
 };
 
 #endif // BEACONFILTERPROXYMODEL_H

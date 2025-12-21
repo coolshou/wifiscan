@@ -32,12 +32,27 @@ void BeaconFilterProxyModel::setSSIDFilter(const QString &filter)
 
 void BeaconFilterProxyModel::setRSSIFilter(const QString &filter)
 {
-    if (m_rssiFilter ==filter)
+    bool ok = false;
+    double val = filter.toDouble(&ok);
+    if (!ok){
         return;
-    m_rssiFilter = filter;
-    invalidateFilter();
+    }
+    if (qFuzzyIsNull(val)){
+        return;
+    }
+    if (qFuzzyCompare(m_rssiFilter, val)){
+        return;
+    }
 
+    m_rssiFilter = val;
+    invalidateFilter();
     emit rssiFilterChanged();
+
+}
+
+void BeaconFilterProxyModel::setFreqFilter(const QString &filter)
+{
+
 }
 
 bool BeaconFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
@@ -63,13 +78,13 @@ bool BeaconFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &
     }
     // --- 3. RSSI Filter Check ---
     bool rssiFilterMatches = true;
-    if (!m_rssiFilter.isEmpty()) {
+    if (!qFuzzyIsNull(m_rssiFilter)) {
         QModelIndex rssiIndex = sourceModel()->index(sourceRow, 0, sourceParent);
         QVariant rssiData = sourceModel()->data(rssiIndex, BeaconModel::Roles::SignalRole);
         bool ok = false;
         double rssi = rssiData.toDouble(&ok);
         if (ok){
-            if (rssi <= m_rssiFilter.toDouble()){
+            if (rssi <= m_rssiFilter){
                 rssiFilterMatches = false;
             }
         }
