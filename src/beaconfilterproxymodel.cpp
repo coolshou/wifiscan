@@ -30,6 +30,16 @@ void BeaconFilterProxyModel::setSSIDFilter(const QString &filter)
     emit ssidFilterChanged();
 }
 
+void BeaconFilterProxyModel::setRSSIFilter(const QString &filter)
+{
+    if (m_rssiFilter ==filter)
+        return;
+    m_rssiFilter = filter;
+    invalidateFilter();
+
+    emit rssiFilterChanged();
+}
+
 bool BeaconFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     // --- 1. Mac Filter Check ---
@@ -51,7 +61,19 @@ bool BeaconFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &
             ssidFilterMatches = false;
         }
     }
-
+    // --- 3. RSSI Filter Check ---
+    bool rssiFilterMatches = true;
+    if (!m_rssiFilter.isEmpty()) {
+        QModelIndex rssiIndex = sourceModel()->index(sourceRow, 0, sourceParent);
+        QVariant rssiData = sourceModel()->data(rssiIndex, BeaconModel::Roles::SignalRole);
+        bool ok = false;
+        double rssi = rssiData.toDouble(&ok);
+        if (ok){
+            if (rssi <= m_rssiFilter.toDouble()){
+                rssiFilterMatches = false;
+            }
+        }
+    }
     // 3. Return the combined result
-    return macFilterMatches && ssidFilterMatches;
+    return macFilterMatches && ssidFilterMatches && rssiFilterMatches;
 }

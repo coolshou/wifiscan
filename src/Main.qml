@@ -162,24 +162,6 @@ ApplicationWindow {
                     verticalAlignment: Text.AlignVCenter
                     // Add this property for the grayed-out hint
                     property string hintText: "Filter RSSI"
-                    // text: hintText
-                    // color: "gray" // Placeholder color
-                    // onFocusChanged: {
-                    //     if (focus) {
-                    //         // When focused, if text is the placeholder, clear it and set normal color
-                    //         if (text === hintText) {
-                    //             text = ""
-                    //             color = "black"
-                    //         }
-                    //     } else {
-                    //         // When focus is lost, if text is empty, reset to placeholder text and color
-                    //         if (text === "") {
-                    //             text = hintText
-                    //             color = "gray"
-                    //         }
-                    //     }
-                    // }
-                    // The core logic to detect text changes and apply the filter
                     // Limits input to integer values between -120 and 0
                     // This physically prevents typing any positive number starting with 1-9
                     validator: RegularExpressionValidator {
@@ -194,7 +176,7 @@ ApplicationWindow {
                     }
                     onTextChanged: {
                         if (text !== hintText) {
-                            // beaconFilterModel.setSSIDFilter(text)
+                            beaconFilterModel.setRSSIFilter(text)
                             console.log("RSSI filter applied:", text)
                         }
                     }
