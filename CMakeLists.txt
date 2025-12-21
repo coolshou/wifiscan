@@ -15,6 +15,8 @@ elseif(APPLE)
     set(MACOSX_BUNDLE_ICON_FILE "wifiscan.icns")
 endif()
 
+set(QML_IMPORT_PATH "${QML_DIRS}" CACHE STRING "Qt Creator 4.1 extra qml import paths")
+
 set(ICON_FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/images/wifiscan.ico")
 
 # (可選) 檢查圖示檔案是否存在
@@ -23,7 +25,7 @@ if(NOT EXISTS ${ICON_FILE_PATH})
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
-find_package(Qt6 REQUIRED COMPONENTS QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS QuickControls2 QuickTemplates2)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
 # qt_standard_project_setup(REQUIRES 6.5)
