@@ -14,7 +14,7 @@ ApplicationWindow {
     // property var columnWidths: [150, -1, 40, 120, 120, 30, 30]
     property var columnWidths: {"bssid": 150, "ssid": -1,
                                 "rssi": 40, "freq": 120,
-                                "generation": 120, "bss": 30,
+                                "generation": 150, "bss": 40,
                                 "more": 30}
 
     ColumnLayout {
