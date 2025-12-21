@@ -177,7 +177,6 @@ ApplicationWindow {
                     onTextChanged: {
                         if (text !== hintText) {
                             beaconFilterModel.setRSSIFilter(text)
-                            console.log("RSSI filter applied:", text)
                         }
                     }
                 }
@@ -193,19 +192,25 @@ ApplicationWindow {
                         text: "2G"
                         id: filter2G
                         font.pixelSize: 10
-                        onCheckedChanged: console.log("2.4G status:", checked)
+                        onCheckedChanged: {
+                            beaconFilterModel.setFreq2Filter(checked)
+                        }
                     }
                     CheckBox {
                         text: "5G"
                         id: filter5G
                         font.pixelSize: 10
-                        onCheckedChanged: console.log("5G status:", checked)
+                        onCheckedChanged: {
+                            beaconFilterModel.setFreq5Filter(checked)
+                        }
                     }
                     CheckBox {
                         text: "6G"
                         id: filter6G
                         font.pixelSize: 10
-                        onCheckedChanged: console.log("6G status:", checked)
+                        onCheckedChanged: {
+                            beaconFilterModel.setFreq6Filter(checked)
+                        }
                     }
                 }
             }

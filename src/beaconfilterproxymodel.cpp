@@ -50,13 +50,33 @@ void BeaconFilterProxyModel::setRSSIFilter(const QString &filter)
 
 }
 
-void BeaconFilterProxyModel::setFreqFilter(const QString &filter)
+void BeaconFilterProxyModel::setFreq2Filter(bool filted)
 {
+    m_freq2Filter = filted;
+    invalidateFilter();
 
+    emit freqFilterChanged();
+}
+
+void BeaconFilterProxyModel::setFreq5Filter(bool filted)
+{
+    m_freq5Filter = filted;
+    invalidateFilter();
+
+    emit freqFilterChanged();
+}
+
+void BeaconFilterProxyModel::setFreq6Filter(bool filted)
+{
+    m_freq6Filter = filted;
+    invalidateFilter();
+
+    emit freqFilterChanged();
 }
 
 bool BeaconFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
+    bool ok = false;
     // --- 1. Mac Filter Check ---
     bool macFilterMatches = true;
     if (!m_macFilter.isEmpty()) {
@@ -81,7 +101,6 @@ bool BeaconFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &
     if (!qFuzzyIsNull(m_rssiFilter)) {
         QModelIndex rssiIndex = sourceModel()->index(sourceRow, 0, sourceParent);
         QVariant rssiData = sourceModel()->data(rssiIndex, BeaconModel::Roles::SignalRole);
-        bool ok = false;
         double rssi = rssiData.toDouble(&ok);
         if (ok){
             if (rssi <= m_rssiFilter){
@@ -89,6 +108,33 @@ bool BeaconFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &
             }
         }
     }
-    // 3. Return the combined result
-    return macFilterMatches && ssidFilterMatches && rssiFilterMatches;
+    // --- 4. freq filter check ---
+    bool freqFilterMatches = true;
+    if (!m_freq2Filter && !m_freq5Filter && !m_freq6Filter){
+        //show all
+    }else{
+        QModelIndex freqIndex = sourceModel()->index(sourceRow, 0, sourceParent);
+        QVariant freqData = sourceModel()->data(freqIndex, BeaconModel::Roles::FrequencyRole);
+        int freq = freqData.toInt(&ok);
+        if (ok){
+            if (m_freq2Filter){
+                if (freq <= 2412 || freq >= 2484){
+                    freqFilterMatches = false;
+                }
+            }
+            if (m_freq5Filter){
+                if (freq <= 5170 || freq >= 5825){
+                    freqFilterMatches = false;
+                }
+            }
+            if (m_freq6Filter){
+                if (freq <= 5925 || freq >= 7125){
+                    freqFilterMatches = false;
+                }
+            }
+        }
+    }
+    // Return the combined result
+    return macFilterMatches && ssidFilterMatches
+           && rssiFilterMatches && freqFilterMatches;
 }
