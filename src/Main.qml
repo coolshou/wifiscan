@@ -148,7 +148,7 @@ ApplicationWindow {
                     onTextChanged: {
                         if (text !== hintText) {
                             beaconFilterModel.setSSIDFilter(text)
-                            console.log("SSID filter applied:", text)
+                            // console.log("SSID filter applied:", text)
                         }
                     }
                 }
