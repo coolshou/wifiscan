@@ -165,7 +165,7 @@ ApplicationWindow {
                     // Limits input to integer values between -120 and 0
                     // This physically prevents typing any positive number starting with 1-9
                     validator: RegularExpressionValidator {
-                        regularExpression: /^(-\d*|0)$/
+                        regularExpression: /^(-\d{0,3})$/
                     }
                     onEditingFinished: {
                         // Final safety check: if value is < -120, reset it
@@ -175,8 +175,12 @@ ApplicationWindow {
                         }
                     }
                     onTextChanged: {
-                        if (text !== hintText) {
+                        if (text !== hintText && text !== "" && text !== "-") {
                             beaconFilterModel.setRSSIFilter(text)
+                            console.log("RSSI filter applied:", text)
+                        }else {
+                            //after apply RSSI value, clear value can not reset filter status so apply a min value
+                            beaconFilterModel.setRSSIFilter("-120")
                         }
                     }
                 }
