@@ -20,7 +20,7 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-
+        // tool bar
         RowLayout {
             spacing: 12
             // width: parent.width
@@ -215,27 +215,10 @@ ApplicationWindow {
                 }
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths["generation"]+columnWidths["bss"]+columnWidths["more"]+8
+                Layout.preferredWidth: columnWidths["generation"]+columnWidths["bss"]+columnWidths["more"]+ filterRow.spacing*2
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
                 color: "#ddd"
             }
-
-            // Rectangle {
-            //     Layout.preferredWidth: columnWidths["generation"]+columnWidths["bss"]
-            //     Layout.preferredHeight: filterRow.Layout.preferredHeight
-            // }
-            // Rectangle {
-            //     Layout.preferredWidth: columnWidths["generation"]+columnWidths["bss"]
-            //     Layout.preferredHeight: filterRow.Layout.preferredHeight
-            //     Button {
-            //         text: "Filter"
-            //         width: parent.width
-            //         height: parent.height
-            //         onClicked: {
-            //             debugPopup.text = "TODO: set filter"
-            //         }
-            //     }
-            // }
         }
         // Header Row
         RowLayout {
@@ -357,7 +340,6 @@ ApplicationWindow {
             ScrollBar.vertical: ScrollBar {}
 
             delegate: Rectangle {
-                // implicitHeight: contentRow.implicitHeight + 8
                 implicitHeight: 50
                 implicitWidth: beaconTableView.width
                 color: index % 2 === 0 ? "#fcf6c6" : "#ffffff"
@@ -367,6 +349,8 @@ ApplicationWindow {
                 radius: 4
 
                 RowLayout {
+                    anchors.leftMargin: 0  // Ensure no offset
+                    anchors.rightMargin: 0
                     anchors.fill: parent
                     spacing: 4
                     // BSSID
@@ -384,7 +368,7 @@ ApplicationWindow {
                             font.bold: true
                             font.pointSize: 12
                             anchors.fill: parent
-                            anchors.margins: 4
+                            // anchors.margins: 4
                             verticalAlignment: TextEdit.AlignVCenter
                         }
                     }
@@ -419,7 +403,6 @@ ApplicationWindow {
                             font.bold: true
                             font.pointSize: 12
                             anchors.fill: parent
-                            anchors.margins: 4
                             verticalAlignment: TextEdit.AlignVCenter
                         }
                     }
@@ -430,7 +413,6 @@ ApplicationWindow {
                         Layout.fillHeight: true
                         ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 4
                             spacing: 2
                             TextEdit {
                                 text: model.frequency + " MHz ("+model.channel+")"
@@ -450,7 +432,7 @@ ApplicationWindow {
                         // 使用 RowLayout 輕鬆排列多個圖示
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 2 // 給圖示一些邊距
+                            // anchors.margins: 2 // 給圖示一些邊距
                             spacing: 1
                             Layout.alignment: Qt.AlignVCenter // 垂直居中對齊
 
@@ -531,7 +513,7 @@ ApplicationWindow {
                     // more button
                     Rectangle {
                         color: "transparent"
-                        Layout.preferredWidth: columnWidths["bss"]
+                        Layout.preferredWidth: columnWidths["more"]
                         Layout.fillHeight: true
                         Button {
                             anchors.centerIn: parent
