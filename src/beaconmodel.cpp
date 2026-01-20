@@ -12,6 +12,11 @@ int BeaconModel::rowCount(const QModelIndex &) const {
     return m_beacons.size();
 }
 
+int BeaconModel::columnCount(const QModelIndex &parent) const
+{
+    return 7; // for QML show's column number
+}
+
 QVariant BeaconModel::data(const QModelIndex &index, int role) const {
     if (!index.isValid() || index.row() >= m_beacons.size())
         return QVariant();
