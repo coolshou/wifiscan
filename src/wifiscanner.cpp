@@ -250,9 +250,9 @@ void parse_beacon_ies(const unsigned char *data, int data_len, BeaconDetail *det
                 bool is_disabled = (he_op_info_byte_0 & 0x80) != 0;
                 detail->bss_color_disable = is_disabled;
                 if (bss_color > 0) {
-                    qDebug() << "[" << detail->ssid << "]"
-                             <<" BSS Color Found:" << bss_color
-                             << " (Disabled:" << (is_disabled ? "Yes)" : "No)");
+                    // qDebug() << "[" << detail->ssid << "]"
+                    //          <<" BSS Color Found:" << bss_color
+                    //          << " (Disabled:" << (is_disabled ? "Yes)" : "No)");
                 } else {
                     // BSS Color value 0 means BSS Coloring is not used.
                     qDebug() << "BSS Coloring is not used (Value is 0)";
