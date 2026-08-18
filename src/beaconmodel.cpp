@@ -27,13 +27,15 @@ QVariant BeaconModel::data(const QModelIndex &index, int role) const {
     case BssidRole: return b.bssid;
     case FrequencyRole: return b.frequency;
     case ChannelRole: return b.channel;
+    case AuthRole: return b.authList;
+    case EncryptRole: return b.encryptionList;
     case SignalRole: return b.signal;
     case TransmitpowerRole: return b.transmitpower;
-    case Is11nRole: return QVariant::fromValue(b.is11n);
-    case Is11acRole: return QVariant::fromValue(b.is11ac);
-    case Is11axRole: return QVariant::fromValue(b.is11ax);
-    case Is11beRole: return QVariant::fromValue(b.is11be);
-    case Is11bnRole: return QVariant::fromValue(b.is11bn);
+    case Is11nRole: return QVariant::fromValue(b.isHtSupported);
+    case Is11acRole: return QVariant::fromValue(b.isVhtSupported);
+    case Is11axRole: return QVariant::fromValue(b.isHeSupported);
+    case Is11beRole: return QVariant::fromValue(b.isEhtSupported);
+    case Is11bnRole: return QVariant::fromValue(b.isUhrSupported);
     case BSSColorRole: return b.bss_color;
     case BSSColorPartialRole: return QVariant::fromValue(b.bss_color_partial);
     case BSSColorDisableRole: return QVariant::fromValue(b.bss_color_disable);
@@ -51,13 +53,15 @@ QHash<int, QByteArray> BeaconModel::roleNames() const {
         { BssidRole, "bssid" },
         { FrequencyRole, "frequency" },
         { ChannelRole, "channel" },
+        { AuthRole, "auth" },
+        { EncryptRole, "encrypt" },
         { SignalRole, "signal" },
         { TransmitpowerRole, "transmitpower"},
-        { Is11nRole, "is11n"},
-        { Is11acRole, "is11ac"},
-        { Is11axRole, "is11ax"},
-        { Is11beRole, "is11be"},
-        { Is11bnRole, "is11bn"},
+        { Is11nRole, "isHtSupported"},
+        { Is11acRole, "isVhtSupported"},
+        { Is11axRole, "isHeSupported"},
+        { Is11beRole, "isEhtSupported"},
+        { Is11bnRole, "isUhrSupported"},
         { BSSColorRole, "bsscolor"},
         { BSSColorPartialRole, "bsscolorpartial"},
         { BSSColorDisableRole, "bsscolordisable"},
@@ -83,7 +87,7 @@ QVariantMap BeaconModel::getElementIDsRoleMap(int row) const
         i.next();
         // 將 int 鍵轉換為字串 (例如 "1", "2", "3")
         // 將 QByteArray 轉換為 QString
-        result.insert(QString::number(i.key()), QString(i.value()));
+        result.insert(QString::number(i.key()), QByteArray(i.value()));
     }
     qDebug() << "getElementIDsRoleMap:" << result;
     return result;

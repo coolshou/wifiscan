@@ -12,10 +12,17 @@ ApplicationWindow {
     minimumWidth: 800
     title: qsTr("WiFi scanner")
     // property var columnWidths: [150, -1, 40, 120, 120, 30, 30]
-    property var columnWidths: {"bssid": 150, "ssid": -1,
-                                "rssi": 40, "freq": 120,
-                                "generation": 150, "bss": 40,
-                                "more": 30}
+    property var columnWidths: {
+        "bssid": 150,
+        "ssid": -1,
+        "rssi": 40,
+        "freq": 120,
+        "auth": 120,
+        "encrypt": 120,
+        "generation": 150,
+        "bss": 40,
+        "more": 30
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -49,9 +56,9 @@ ApplicationWindow {
                 Layout.preferredWidth: 80
                 enabled: !wifiScanner.busy
                 onClicked: {
-                    debugPopup.text = "Scanning on: " + ifaceSelector.currentText
-                    debugPopup.open()
-                    wifiScanner.startScan(ifaceSelector.currentText)
+                    debugPopup.text = "Scanning on: " + ifaceSelector.currentText;
+                    debugPopup.open();
+                    wifiScanner.startScan(ifaceSelector.currentText);
                 }
             }
             TextEdit {
@@ -65,12 +72,14 @@ ApplicationWindow {
                 //anchors.fill: parent
                 //anchors.margins: 4
             }
-            Item { Layout.fillWidth: true }
+            Item {
+                Layout.fillWidth: true
+            }
             Button {
                 text: "..."
                 width: 30
                 onClicked: {
-                    debugPopup.text = "TODO: options"
+                    debugPopup.text = "TODO: options";
                 }
             }
         }
@@ -99,21 +108,21 @@ ApplicationWindow {
                         if (focus) {
                             // When focused, if text is the placeholder, clear it and set normal color
                             if (text === hintText) {
-                                text = ""
-                                color = "black"
+                                text = "";
+                                color = "black";
                             }
                         } else {
                             // When focus is lost, if text is empty, reset to placeholder text and color
                             if (text === "") {
-                                text = hintText
-                                color = "gray"
+                                text = hintText;
+                                color = "gray";
                             }
                         }
                     }
                     // The core logic to detect text changes and apply the filter
                     onTextChanged: {
                         if (text !== hintText) {
-                            beaconFilterModel.setMacFilter(text)
+                            beaconFilterModel.setMacFilter(text);
                         }
                     }
                 }
@@ -133,21 +142,21 @@ ApplicationWindow {
                         if (focus) {
                             // When focused, if text is the placeholder, clear it and set normal color
                             if (text === hintText) {
-                                text = ""
-                                color = "black"
+                                text = "";
+                                color = "black";
                             }
                         } else {
                             // When focus is lost, if text is empty, reset to placeholder text and color
                             if (text === "") {
-                                text = hintText
-                                color = "gray"
+                                text = hintText;
+                                color = "gray";
                             }
                         }
                     }
                     // The core logic to detect text changes and apply the filter
                     onTextChanged: {
                         if (text !== hintText) {
-                            beaconFilterModel.setSSIDFilter(text)
+                            beaconFilterModel.setSSIDFilter(text);
                             // console.log("SSID filter applied:", text)
                         }
                     }
@@ -171,16 +180,16 @@ ApplicationWindow {
                         // Final safety check: if value is < -120, reset it
                         if (parseInt(text) < -120) {
                             //TODO: notice only allow 0~-120
-                            text = "-120"
+                            text = "-120";
                         }
                     }
                     onTextChanged: {
                         if (text !== hintText && text !== "" && text !== "-") {
-                            beaconFilterModel.setRSSIFilter(text)
-                            console.log("RSSI filter applied:", text)
-                        }else {
+                            beaconFilterModel.setRSSIFilter(text);
+                            console.log("RSSI filter applied:", text);
+                        } else {
                             //after apply RSSI value, clear value can not reset filter status so apply a min value
-                            beaconFilterModel.setRSSIFilter("-120")
+                            beaconFilterModel.setRSSIFilter("-120");
                         }
                     }
                 }
@@ -193,33 +202,101 @@ ApplicationWindow {
                     anchors.fill: parent
                     spacing: -8 // Adjust this to change the gap between checkboxes
                     CheckBox {
-                        text: "2G"
                         id: filter2G
+                        text: "2G"
                         font.pixelSize: 10
                         onCheckedChanged: {
-                            beaconFilterModel.setFreq2Filter(checked)
+                            beaconFilterModel.setFreq2Filter(checked);
                         }
                     }
                     CheckBox {
-                        text: "5G"
                         id: filter5G
+                        text: "5G"
                         font.pixelSize: 10
                         onCheckedChanged: {
-                            beaconFilterModel.setFreq5Filter(checked)
+                            beaconFilterModel.setFreq5Filter(checked);
                         }
                     }
                     CheckBox {
-                        text: "6G"
                         id: filter6G
+                        text: "6G"
                         font.pixelSize: 10
                         onCheckedChanged: {
-                            beaconFilterModel.setFreq6Filter(checked)
+                            beaconFilterModel.setFreq6Filter(checked);
                         }
                     }
                 }
             }
             Rectangle {
-                Layout.preferredWidth: columnWidths["generation"]+columnWidths["bss"]+columnWidths["more"]+ filterRow.spacing*2
+                Layout.preferredWidth: columnWidths["auth"]
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+                TextInput {
+                    id: filterAuth
+                    anchors.fill: parent // <-- Fills the parent Rectangle
+                    verticalAlignment: Text.AlignVCenter
+                    property string hintText: "Filter Auth"
+                    text: hintText
+                    color: "gray" // Placeholder color
+                    onFocusChanged: {
+                        if (focus) {
+                            // When focused, if text is the placeholder, clear it and set normal color
+                            if (text === hintText) {
+                                text = "";
+                                color = "black";
+                            }
+                        } else {
+                            // When focus is lost, if text is empty, reset to placeholder text and color
+                            if (text === "") {
+                                text = hintText;
+                                color = "gray";
+                            }
+                        }
+                    }
+                    // The core logic to detect text changes and apply the filter
+                    onTextChanged: {
+                        if (text !== hintText) {
+                            // beaconFilterModel.setSSIDFilter(text);
+                            console.log("TODO: auth filter applied:", text);
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                Layout.preferredWidth: columnWidths["encrypt"]
+                Layout.preferredHeight: filterRow.Layout.preferredHeight
+                TextInput {
+                    id: filterEncrypt
+                    anchors.fill: parent // <-- Fills the parent Rectangle
+                    verticalAlignment: Text.AlignVCenter
+                    property string hintText: "Filter Auth"
+                    text: hintText
+                    color: "gray" // Placeholder color
+                    onFocusChanged: {
+                        if (focus) {
+                            // When focused, if text is the placeholder, clear it and set normal color
+                            if (text === hintText) {
+                                text = "";
+                                color = "black";
+                            }
+                        } else {
+                            // When focus is lost, if text is empty, reset to placeholder text and color
+                            if (text === "") {
+                                text = hintText;
+                                color = "gray";
+                            }
+                        }
+                    }
+                    // The core logic to detect text changes and apply the filter
+                    onTextChanged: {
+                        if (text !== hintText) {
+                            // beaconFilterModel.setSSIDFilter(text);
+                            console.log("TODO: encrypt filter applied:", text);
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                Layout.preferredWidth: columnWidths["generation"] + columnWidths["bss"] + columnWidths["more"] + filterRow.spacing * 2
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
                 color: "#ddd"
             }
@@ -297,6 +374,26 @@ ApplicationWindow {
                 }
             }
             Rectangle {
+                Layout.preferredWidth: columnWidths["auth"]
+                Layout.preferredHeight: headerRow.Layout.preferredHeight
+                color: "#ddd"
+                Text {
+                    anchors.centerIn: parent
+                    text: "Auth"
+                    font.bold: true
+                }
+            }
+            Rectangle {
+                Layout.preferredWidth: columnWidths["encrypt"]
+                Layout.preferredHeight: headerRow.Layout.preferredHeight
+                color: "#ddd"
+                Text {
+                    anchors.centerIn: parent
+                    text: "Encrypt"
+                    font.bold: true
+                }
+            }
+            Rectangle {
                 Layout.preferredWidth: columnWidths["generation"]
                 Layout.preferredHeight: headerRow.Layout.preferredHeight
                 color: "#ddd"
@@ -305,7 +402,6 @@ ApplicationWindow {
                     text: "Generation"
                     font.bold: true
                 }
-
             }
             Rectangle {
                 Layout.preferredWidth: columnWidths["bss"]
@@ -380,7 +476,7 @@ ApplicationWindow {
                     Rectangle {
                         color: "transparent"
                         // Layout.preferredWidth: ssidColumnWidth
-                        Layout.fillWidth:  true
+                        Layout.fillWidth: true
                         Layout.fillHeight: true
                         TextEdit {
                             text: model.ssid
@@ -419,7 +515,41 @@ ApplicationWindow {
                             anchors.fill: parent
                             spacing: 2
                             TextEdit {
-                                text: model.frequency + " MHz ("+model.channel+")"
+                                text: model.frequency + " MHz (" + model.channel + ")"
+                                readOnly: true
+                                selectByMouse: true
+                                wrapMode: TextEdit.NoWrap
+                                font.pointSize: 10
+                            }
+                        }
+                    }
+                    // Auth
+                    Rectangle {
+                        color: "transparent"
+                        Layout.preferredWidth: columnWidths["auth"]
+                        Layout.fillHeight: true
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 2
+                            TextEdit {
+                                text: model.auth
+                                readOnly: true
+                                selectByMouse: true
+                                wrapMode: TextEdit.NoWrap
+                                font.pointSize: 10
+                            }
+                        }
+                    }
+                    // Encrypt
+                    Rectangle {
+                        color: "transparent"
+                        Layout.preferredWidth: columnWidths["encrypt"]
+                        Layout.fillHeight: true
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 2
+                            TextEdit {
+                                text: model.encrypt
                                 readOnly: true
                                 selectByMouse: true
                                 wrapMode: TextEdit.NoWrap
@@ -441,7 +571,7 @@ ApplicationWindow {
                             Layout.alignment: Qt.AlignVCenter // 垂直居中對齊
 
                             Image {
-                                visible: model.is11n
+                                visible: model.isHtSupported
                                 source: "qrc:/image/wifi4"
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
@@ -454,7 +584,7 @@ ApplicationWindow {
                                 }
                             }
                             Image {
-                                visible: model.is11ac
+                                visible: model.isVhtSupported
                                 source: "qrc:/image/wifi5"
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
@@ -467,7 +597,7 @@ ApplicationWindow {
                                 }
                             }
                             Image {
-                                visible: model.is11ax
+                                visible: model.isHeSupported
                                 source: "qrc:/image/wifi6"
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
@@ -480,7 +610,7 @@ ApplicationWindow {
                                 }
                             }
                             Image {
-                                visible: model.is11be
+                                visible: model.isEhtSupported
                                 source: "qrc:/image/wifi7"
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
@@ -491,21 +621,35 @@ ApplicationWindow {
                                     ToolTip.text: "802.11be"
                                     ToolTip.visible: containsMouse
                                 }
-
                             }
-                            Item { Layout.fillWidth: true } // 填滿剩餘空間，將圖示靠左對齊
+                            Image {
+                                visible: model.isUhrSupported
+                                source: "qrc:/image/wifi8"
+                                Layout.preferredWidth: 24
+                                Layout.preferredHeight: 24
+                                fillMode: Image.PreserveAspectFit
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    ToolTip.text: "802.11bn"
+                                    ToolTip.visible: containsMouse
+                                }
+                            }
+                            Item {
+                                Layout.fillWidth: true
+                            } // 填滿剩餘空間，將圖示靠左對齊
                         }
                     }
                     // BSS color
                     Rectangle {
                         // color: model.bsscolordisable?"gray":"transparent"
-                        color:"transparent"
+                        color: "transparent"
                         Layout.preferredWidth: columnWidths["bss"]
                         Layout.fillHeight: true
                         TextEdit {
                             // text: model.bsscolordisable?"":model.bsscolor?model.bsscolor:""
-                            text:model.bsscolor?model.bsscolor:""
-                            color: model.bsscolordisable?"gray":"black"
+                            text: model.bsscolor ? model.bsscolor : ""
+                            color: model.bsscolordisable ? "gray" : "black"
                             readOnly: true
                             selectByMouse: true
                             wrapMode: TextEdit.NoWrap
@@ -527,18 +671,19 @@ ApplicationWindow {
                                 //TODO: current row's detail info
                                 // console.log("elmIDs:", model.elementIDs);
                                 // myDetailDialog.beaconModel = beaconModel
-                                let rowData = {ssid: model.ssid,
+                                let rowData = {
+                                    ssid: model.ssid,
                                     bssid: model.bssid,
                                     signal: model.signal,
                                     capabilities: model.capabilities,
                                     transmitpower: model.transmitpower,
                                     elmIds: beaconModel.getElementIDsRoleMap(index),
-                                    elmExtIDs: model.elementExtIDs,
-                                                    // ... 傳遞所有需要的 roles
-                                    };
-                                myDetailDialog.currentBeacon = rowData
-                                myDetailDialog.dialogWidth = mainWindow.width
-                                myDetailDialog.open()
+                                    elmExtIDs: model.elementExtIDs
+                                    // ... 傳遞所有需要的 roles
+                                };
+                                myDetailDialog.currentBeacon = rowData;
+                                myDetailDialog.dialogWidth = mainWindow.width;
+                                myDetailDialog.open();
                             }
                         }
                     }
@@ -555,14 +700,14 @@ ApplicationWindow {
         height: mainWindow.height
         implicitWidth: mainWindow.width
         implicitHeight: mainWindow.height
-        anchors.centerIn: parent;
+        anchors.centerIn: parent
         // 處理 Dialog 的結果
         onAccepted: {
-            console.log("Detail onAccepted")
+            console.log("Detail onAccepted");
             // statusText.text = "設定已儲存 (Accepted)"
         }
         onRejected: {
-            console.log("Detail onRejected")
+            console.log("Detail onRejected");
             // statusText.text = "設定操作已取消 (Rejected)"
         }
     }
@@ -594,9 +739,10 @@ ApplicationWindow {
 
         property string text: ""
         onTextChanged: {
-            debugText.text = text
-            if (!visible) open()
-            hideTimer.restart()
+            debugText.text = text;
+            if (!visible)
+                open();
+            hideTimer.restart();
         }
 
         Timer {
@@ -611,13 +757,13 @@ ApplicationWindow {
     Connections {
         target: wifiScanner
         function onScanFinished() {
-            debugPopup.close()
-            //TODO: can not call c++
-            // console.debug("sitesurveys", beaconTableView.model.count())
-            // sitesurveys.text = beaconTableView.model.count()
+            debugPopup.close();
+        //TODO: can not call c++
+        // console.debug("sitesurveys", beaconTableView.model.count())
+        // sitesurveys.text = beaconTableView.model.count()
         }
         function onError(msg) {
-            debugPopup.text = "ERROR: " + msg
+            debugPopup.text = "ERROR: " + msg;
         }
     }
 }

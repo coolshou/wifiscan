@@ -6,13 +6,13 @@
 #include <QQuickStyle>
 #include <QDirIterator>
 
-#include "src/wifiscanner.h"
+#include "wifiscanner.h"
 #ifdef IS_DESKTOP_LINUX
-#include "src/beaconmodel.h"
+#include "beaconmodel.h"
 #endif
-#include "src/beaconfilterproxymodel.h"
-#include "src/interfacemodel.h"
-#include "src/imageprovider.h"
+#include "beaconfilterproxymodel.h"
+#include "interfacemodel.h"
+#include "imageprovider.h"
 
 #if defined(Q_OS_ANDROID)
 // Android: JNI includes

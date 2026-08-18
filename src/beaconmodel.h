@@ -18,6 +18,8 @@ public:
         FrequencyRole,
         ChannelRole,
         SignalRole,
+        AuthRole,
+        EncryptRole,
         TransmitpowerRole,
         Is11nRole,
         Is11acRole,

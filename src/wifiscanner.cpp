@@ -37,8 +37,8 @@ static int handle_scan_result(struct nl_msg *msg, void *arg);
 #endif
 #endif
 
-#include "src/utf8utils.h"
-#include "src/wifiutils.h"
+#include "utf8utils.h"
+#include "wifiutils.h"
 
 // --- Global variables for the callback and policy ---
 struct ScanContext {
@@ -59,181 +59,211 @@ static void init_bss_policy() {
 }
 #endif
 
-#ifdef IS_DESKTOP_LINUX
-// --- Netlink Callback Function ---
+void parse_rsn_or_wpa_ie(const unsigned char *data, int len, BeaconDetail *detail, bool is_wpa1)
+{
+    // Minimal IE length check
+    if (len < 8) return;
+
+    // Index 0-1: Version (2 bytes)
+    // Index 2-5: Group Data Cipher Suite (4 bytes)
+    // Index 6-7: Pairwise Cipher Suite Count (2 bytes)
+    uint16_t pairwise_count = data[6] | (data[7] << 8);
+    int offset = 8;
+
+    // 1. Extract Pairwise Ciphers
+    for (int i = 0; i < pairwise_count && (offset + 4) <= len; ++i) {
+        uint32_t cipher = ((uint32_t)data[offset] << 24) |
+                          ((uint32_t)data[offset+1] << 16) |
+                          ((uint32_t)data[offset+2] << 8) |
+                          (uint32_t)data[offset+3];
+
+        uint32_t oui = cipher & 0xFFFFFF00;
+        uint8_t type = cipher & 0xFF;
+
+        if (oui == 0x000FAC00 || oui == 0x0050F200) {
+            if (type == 2 && !detail->encryptionList.contains("TKIP"))
+                detail->encryptionList.append("TKIP");
+            else if (type == 4 && !detail->encryptionList.contains("CCMP (AES)"))
+                detail->encryptionList.append("CCMP (AES)");
+            else if ((type == 8 || type == 9) && !detail->encryptionList.contains("GCMP"))
+                detail->encryptionList.append("GCMP");
+        }
+        offset += 4;
+    }
+
+    // 2. Extract AKM Suites (Authentication)
+    if (offset + 2 <= len) {
+        uint16_t akm_count = data[offset] | (data[offset+1] << 8);
+        offset += 2;
+
+        for (int i = 0; i < akm_count && (offset + 4) <= len; ++i) {
+            uint32_t akm = ((uint32_t)data[offset] << 24) |
+                           ((uint32_t)data[offset+1] << 16) |
+                           ((uint32_t)data[offset+2] << 8) |
+                           (uint32_t)data[offset+3];
+
+            uint32_t oui = akm & 0xFFFFFF00;
+            uint8_t type = akm & 0xFF;
+
+            if (is_wpa1) {
+                // WPA1 專用 OUI (00:50:F2)
+                if (oui == 0x0050F200 || oui == 0x000FAC00) {
+                    if (type == 1 && !detail->authList.contains("WPA-Enterprise"))
+                        detail->authList.append("WPA-Enterprise");
+                    else if (type == 2 && !detail->authList.contains("WPA-PSK"))
+                        detail->authList.append("WPA-PSK");
+                }
+            } else {
+                // RSN (WPA2 / WPA3) (OUI 00:0F:AC)
+                if (type == 1 && !detail->authList.contains("WPA2-Enterprise"))
+                    detail->authList.append("WPA2-Enterprise");
+                else if (type == 2 && !detail->authList.contains("WPA2-PSK"))
+                    detail->authList.append("WPA2-PSK");
+                else if (type == 8 && !detail->authList.contains("WPA3-SAE"))
+                    detail->authList.append("WPA3-SAE");
+                else if (type == 18 && !detail->authList.contains("OWE"))
+                    detail->authList.append("OWE");
+                else if (type == 24 && !detail->authList.contains("WPA3-Enterprise"))
+                    detail->authList.append("WPA3-Enterprise");
+            }
+            offset += 4;
+        }
+    }
+}
+
 void parse_beacon_ies(const unsigned char *data, int data_len, BeaconDetail *detail)
 {
     // Start iterating from the beginning of the IE data buffer
-    const unsigned char *pos = data;
-    const unsigned char *end = data + data_len;
-
     // Zero out the SSID details before parsing
     detail->ssid = QString();
     detail->ssid_len = 0;
+    detail->supportedRates.clear();
+    detail->encryptionList.clear();
+    detail->authList.clear();
+    int offset = 0;
+    // bool has_privacy = false; // Set this if Capability Info bit 4 is set, or track via IEs
 
     // Loop through the buffer while there is enough room for an IE header (ID + Length)
-    while (pos + 2 <= end) {
+    while (offset + 2 <= data_len) {
+        uint8_t id = data[offset];
+        uint8_t ie_len = data[offset + 1];
 
-        // --- 1. Read the IE Header ---
-        unsigned char element_id = pos[0];
-        unsigned char element_len = pos[1]; // Length of the payload only (0-255)
-
-        // --- 2. Check for buffer integrity (Is the full payload inside the buffer?) ---
-        if (pos + 2 + element_len > end) {
-            // Error: The buffer is truncated or corrupted
-            // The declared length of the element goes beyond the end of the data_len
-            fprintf(stderr, "IE ID 0x%02x length (%d) exceeds remaining buffer.\n",
-                    element_id, element_len);
+        // 避免長度溢位 (Malformed IE)
+        if (offset + 2 + ie_len > data_len) {
             break;
         }
 
-        // --- 3. Process the Element ID (The SSID is ID 0x00) ---
-        if (element_id == 0x00) {
-            // Check for a non-hidden SSID
-            if (element_len > 0) {
-                // 1. Get a pointer to the start of the raw SSID bytes
-                const char *ssid_raw_ptr = reinterpret_cast<const char *>(pos + 2);
+        const unsigned char *ie_data = &data[offset + 2];
 
-                // 2. Create a QByteArray from the raw data and the known length
-                // QByteArray is used as a safe container for the raw bytes
-                QByteArray raw_ssid(ssid_raw_ptr, element_len);
+        switch (id) {
+        case WLAN_EID_SSID: {// ID 0
+            detail->ssid_len = ie_len;
+            bool is_hidden = (ie_len == 0);
 
-                // 3. Decode the raw bytes into the QString, assuming UTF-8
-                detail->ssid = QString::fromUtf8(raw_ssid);
-                // break;
-
-            } else {
-                // Length is 0, indicating a Hidden SSID
-                // You can set a special flag or string here
-                detail->ssid = "[hidden]";
-                // break;
-            }
-        }
-        // Tag Number: Supported Rates (1)
-        if (element_id == 1) {
-            // The length can be up to 8 bytes
-            if (element_len > 0 && element_len <= 8) {
-                // Start pointer at the rates payload
-                const unsigned char *rates_ptr = pos + 2;
-                for (int i = 0; i < element_len; ++i) {
-                    unsigned char rate_byte = rates_ptr[i];
-
-                    // Check if it's a Basic Rate (Bit 7 is set)
-                    bool is_basic = (rate_byte & 0x80) != 0;
-
-                    // Get the rate value (Bits 6-0)
-                    // The value is in units of 0.5 Mbps (500 kbps)
-                    unsigned char rate_value = rate_byte & 0x7F;
-
-                    // Calculate the actual rate in Mbps (as a float or int*10 for precision)
-                    double actual_rate_mbps = rate_value * 0.5;
-
-                    // qDebug() << "Rate:" << actual_rate_mbps << "Mbps, Basic:" << is_basic;
-
-                    // TODO: You would store these values in a list within your detail struct
-                    // detail->supported_rates.append({actual_rate_mbps, is_basic});
+            if (!is_hidden) {
+                // 檢查是否全為 NULL Byte (\0)
+                is_hidden = true;
+                for (int i = 0; i < ie_len; ++i) {
+                    if (ie_data[i] != 0x00) {
+                        is_hidden = false;
+                        break;
+                    }
                 }
-            } else {
-                qWarning() << "Supported Rates IE has invalid length:" << element_len;
             }
+            if (is_hidden) {
+                detail->ssid = "[hidden]";
+            }else {
+                detail->ssid = QString::fromUtf8((const char *)ie_data, ie_len);
+            }
+            break;
         }
-        if (element_id == 35) {
-            //Tag: TPC Report Transmit Power (35)
-            if (element_len == 2) {
+        // case WLAN_EID_SUPP_RATES:    // ID 1: Supported Rates
+        case WLAN_EID_EXT_SUPP_RATES:{
+            for (int i = 0; i < ie_len; ++i) {
+                double rate_mbps = (ie_data[i] & 0x7F) * 0.5;
+                detail->supportedRates.append(rate_mbps);
+            }
+            break;
+        }
+
+        case WLAN_EID_TPC_REPORT: { // ID 35: TPC Report Transmit Power
+            if (ie_len >= 2) {
                 // Transmitted Power is the first data byte (at pos + 2)
                 // It is a signed 8-bit value (char/qint8) in dBm.
-
-                // 1. Get the raw signed byte
-                const char *tx_power_raw = reinterpret_cast<const char *>(pos + 2);
-
-                // 2. Convert the signed char byte to a standard integer type
-                // We use qint8 to ensure it's treated as a signed byte (like -5, 10, etc.)
-                qint8 transmitted_power_dbm = *tx_power_raw;
-
-                // qDebug() << "[" << detail->bssid << "]txpower:" << transmitted_power_dbm;
-                detail->transmitpower = transmitted_power_dbm;
-
+                detail->txPower = (int8_t)ie_data[0];
+                detail->linkMargin = (int8_t)ie_data[1];
             }
+            break;
         }
-        if (element_id == 45) {
-            // Tag Number: HT Capabilities (802.11n D1.10) (45)
-            if (element_len > 0) {
-                detail->is11n = true;
-            }
-        }
-        // Tag Number: HT Information (802.11n D1.10) (61)
 
-        if (element_id == 191) {
-            // Tag Number: VHT Capabilities (191)
-            if (element_len > 0) {
-                detail->is11ac = true;
+        case WLAN_EID_HT_CAP: { // ID 45: 11n HT Capabilities (Wi-Fi 4)
+            detail->isHtSupported = true;
+            if (ie_len >= 2) {
+                uint16_t ht_cap_info = ie_data[0] | (ie_data[1] << 8);
+                detail->supports40MHz = (ht_cap_info & (1 << 1)) != 0;
             }
+            break;
+        }
+            // Tag Number: HT Information (802.11n D1.10) (61)
+
+        case WLAN_EID_RSN: { // ID 48
+            parse_rsn_or_wpa_ie(ie_data, ie_len, detail, false);
+            break;
+        }
+        case WLAN_EID_VHT_CAP: { // ID 191: 11ac VHT Capabilities (Wi-Fi 5)
+            detail->isVhtSupported = true;
+            if (ie_len >= 4) {
+                uint32_t vht_cap_info = ie_data[0] | (ie_data[1] << 8) |
+                                        (ie_data[2] << 16) | (ie_data[3] << 24);
+                uint8_t chan_width = (vht_cap_info >> 2) & 0x03;
+                // detail->supports160MHz = (chan_width > 0);
+            }
+            break;
         }
         // Tag Number: VHT Operation (192)
-
-        //     // 2. Capability Information (Element ID 10) - Very complex, just a placeholder
-        //     if (data[0] == 10 && data[1] == 2) {
-        //         // Capability info is usually part of the fixed fields, not an IE, but
-        //         // a proper beacon frame parser would handle this.
-        //         // For simplicity, let's just mark the capabilities data is present.
-        //         detail.capabilities = "IEs Found";
-        //     }
-
-
-        // qDebug() << "element_id:" << element_id;
-        if (element_id < 255){
-            detail->elmIDs[element_id] = QByteArray(reinterpret_cast<const char *>(pos + 2),
-                                                    element_len);
-            // qDebug() << "detail.elmIDs:" + QString::number(detail->elmIDs.keys().length());
-        }else{
-            // Check for minimum length: 1 byte for Ext. ID + 1 byte payload
-            if (element_len < 1) {
-                qWarning() << "Extended Tag IE has minimum length error.";
-                // Move to next IE: 1 byte ID + 1 byte Length + element_len payload
-                pos += 2 + element_len;
-                continue;
-            }
-            // Get the Extended Element ID (Type)
-            unsigned char extended_id = pos[2];
-
-            // Check if this Extended Tag contains the HE Capabilities (Type 35)
-            if (extended_id == 35) {
-                // Ext Tag Number: Tag 255, HE Capabilities (35)
-                detail->is11ax = true;
-
-                // The HE Capabilities payload starts at offset 3 of the main IE
-                const unsigned char *he_data_ptr = pos + 3;
-
-                // The length of the HE Capabilities payload is element_len - 1
-                int he_data_len = element_len - 1;
-
-                // --- Process HE Capabilities Payload ---
-                // The first two bytes (he_data_ptr[0] and he_data_ptr[1]) are
-                // typically the HE MAC Capabilities Info field.
-
-                if (he_data_len >= 2) {
-                    // Example: Extract the first two bytes (MAC Capabilities)
-                    quint16 mac_cap_info = (quint16)he_data_ptr[0] | (quint16)he_data_ptr[1] << 8;
-
-                    // qDebug() << "Found HE Capabilities (Wi-Fi 6). MAC Cap Info:"
-                    //          << QString::number(mac_cap_info, 16);
-
-                    // You would continue to parse the remaining bytes
-                    // (PHY capabilities, TX/RX L-SIG, MCS/NSS Set, etc.) here.
-                    // Store the raw HE capabilities data in your struct for later parsing.
-                    // detail->he_capabilities_raw = QByteArray::fromRawData(
-                    //    reinterpret_cast<const char*>(he_data_ptr), he_data_len);
-                } else {
-                    qWarning() << "HE Capabilities element too short.";
+        case WLAN_EID_VENDOR_SPECIFIC: {// ID 221
+            if (ie_len >= 4 && memcmp(ie_data, WPA_OUI, 4) == 0) {
+                parse_rsn_or_wpa_ie(ie_data + 4, ie_len - 4, detail, true);
+            }else {
+                printf("[%s]Vendor Specific IE Data (Len: %d): ", detail->ssid.toUtf8().constData(),ie_len);
+                for (int i = 0; i < ie_len; i++) {
+                    printf("%02X ", ie_data[i]);
                 }
+                printf("\n");
             }
-            if (extended_id == 36) {
+            break;
+        }
+        case WLAN_EID_EXTENSION: { // ID 255: Extended Elements
+            if (ie_len < 1) break; // 長度不足以包含 Ext ID
+
+            uint8_t ext_id = ie_data[0]; // 第一個 byte 是 Extended Element ID
+            const unsigned char *ext_data = &ie_data[1];
+            uint8_t ext_len = ie_len - 1;
+
+            switch (ext_id) {
+            case WLAN_EID_EXT_HE_CAP: {// Ext ID 35: HE Capabilities (Wi-Fi 6)
+                detail->isHeSupported = true; // 支援 802.11ax
+                // HE PHY Capabilities Info 通常位於 HE Capabilities 的第 6 個 byte 開始
+                // (前 6 bytes 為 HE MAC Capabilities Info)
+                if (ext_len >= 7) {
+                    const unsigned char *he_phy_cap = &ext_data[6]; // HE PHY Cap Byte 0
+
+                    // HE PHY Cap Byte 0, Bit 1: Channel Width Set
+                    // (0 = 80MHz only, 1 = 160MHz or 80+80MHz)
+                    if (he_phy_cap[0] & (1 << 1)) {
+                        detail->supports160MHz = true;
+                    }
+                }
+                break;
+            }
+
+            case WLAN_EID_EXT_HE_OPERATION: {
                 // Ext Tag Number: Tag 255, HE Operation (36)
                 // extended_id(1)+HE Operation Information(3)+BSS color(1)+HE-MCS(2)
 
                 // The HE Operation Information starts at pos + 3 (len 3)
                 // Byte 0 of HE Op Info (pos[3]) contains the BSS Color
-                unsigned char he_op_info_byte_0 = pos[6];
+                unsigned char he_op_info_byte_0 = ext_data[6];
                 // qDebug("[%s]he_op_info_byte_0: 0x%02hhx",
                 //        detail->ssid.toUtf8().constData(),
                 //        he_op_info_byte_0);
@@ -260,41 +290,71 @@ void parse_beacon_ies(const unsigned char *data, int data_len, BeaconDetail *det
                 // Basic HE-MCS and NSS Set: 0xfffc
             }
 
-            if (extended_id == 108) {
-                // EHT Capabilities (108)
-                detail->is11be = true;
+            case WLAN_EID_EXT_EHT_CAP: {// Ext ID 107: EHT Capabilities (Wi-Fi 7)
+                detail->isEhtSupported = true; // 支援 802.11be
+                // EHT Capabilities 包含 MAC 與 PHY Cap Info
+                // EHT PHY Capabilities Info 位於第 2 個 Byte (或 offset 根據 MAC cap 長度而定)
+                if (ext_len >= 3) {
+                    // Byte 1 或 Byte 2 包含 EHT Channel Width 資訊
+                    // Bit 1: 320 MHz 支援標誌
+                    uint8_t eht_phy_cap_0 = ext_data[1];
 
+                    if (eht_phy_cap_0 & (1 << 1)) {
+                        detail->supports320MHz = true;
+                    }
+                    // Wi-Fi 7 預設也會向下支援 160MHz
+                    detail->supports160MHz = true;
+                }
+                break;
             }
-            if (extended_id == 106) {
-                // EHT Operation (106)
+            default:
+                break;
             }
-
-            // UHR Operation
-            // UHR Capabilities
-            //         int iLen = static_cast<unsigned char>(data[1]);
-            //         // const char *extidPtr = reinterpret_cast<const char *>(data[2]);
-            //         detail.elmExtIDs[data[2]] = QByteArray(reinterpret_cast<const char *>(&data[3]),
-            //                                                iLen - 1);
-            //         // qDebug() << "detail.elmExtIDs:" +  QString::number(detail.elmExtIDs.keys().length());
-
+            break;
         }
 
-        //     // Tag Number: Traffic Indication Map (TIM) (5)
-        //     // Tag Number: RSN Information (48)
-        //     // Tag Number: Extended Capabilities (127)
-        //     // Tag Number: Vendor Specific (221)
-        //     //      OUI: 00:50:f2 (Microsoft Corp.)
-        //     //      Vendor Specific OUI Type: 1
-        //     // TODO: many other Element
+        default:
+            break;
+        }
 
-        // --- 4. Advance the Pointer (The most crucial step!) ---
-        // Move the pointer past the current element:
-        // 1 byte (ID) + 1 byte (Length) + element_len (Payload)
-        pos += 2 + element_len;
+        offset += 2 + ie_len;
+    }
 
-        // Optionally add logic here to parse other IEs (e.g., Rates 0x01, HT Capabilities 0x2D)
+    // Fallback security checks
+    if (detail->authList.isEmpty()) {
+        detail->authList.append("Open");
+    }
+
+}
+
+
+#ifdef IS_DESKTOP_LINUX
+// --- Netlink Callback Function ---
+
+bool checkPrivacyBit(uint16_t capability_info)
+{
+    // Bit 4 (0x0010) 為 Privacy 標誌
+    return (capability_info & (1 << 4)) != 0;
+}
+void finalize_security_type(uint16_t capability_info, BeaconDetail *detail)
+{
+    bool has_privacy = checkPrivacyBit(capability_info);
+    detail->hasPrivacyBit = has_privacy;
+
+    // 若既沒有 WPA 也不存在 RSN/WPA2/WPA3
+    if (detail->authList.isEmpty() && detail->encryptionList.isEmpty()) {
+        if (has_privacy) {
+            // 有啟動 Privacy 但沒有任何 RSN/WPA IE -> WEP
+            detail->authList.append("WEP");
+            detail->encryptionList.append("WEP");
+        } else {
+            // 沒有 Privacy 標誌 -> 完全開放的 Open 網路
+            detail->authList.append("Open");
+            detail->encryptionList.append("None");
+        }
     }
 }
+#endif
 // This function is called by nl_recvmsgs_default() for each BSS entry.
 static int handle_scan_result(struct nl_msg *msg, void *arg)
 {
@@ -318,6 +378,7 @@ static int handle_scan_result(struct nl_msg *msg, void *arg)
 
     // 3. Extract Beacon Details
     BeaconDetail detail;
+    uint16_t capability_info = 0;
 
     // BSSID (MAC Address)
     if (bss[NL80211_BSS_BSSID]) {
@@ -343,27 +404,36 @@ static int handle_scan_result(struct nl_msg *msg, void *arg)
     if (bss[NL80211_BSS_SIGNAL_MBM]) {
         // NL80211_BSS_SIGNAL is typically a nested attribute containing a 33-bit signal value.
         // For simplicity, we assume the raw value is in mBm (0.001 dBm)
-        int mbm_signal = nla_get_u32(bss[NL80211_BSS_SIGNAL_MBM]);
+        int mbm_signal = nla_get_s32(bss[NL80211_BSS_SIGNAL_MBM]);
         detail.signal = mbm_signal / 100; // Convert mBm to dBm
     }
-
+    // Capability Information (用於 WEP / Privacy Bit 判斷)
+    if (bss[NL80211_BSS_CAPABILITY]) {
+        capability_info = nla_get_u16(bss[NL80211_BSS_CAPABILITY]);
+    }
     // INFORMATION ELEMENTS: Raw data including SSID, Capabilities, etc.
-    if (bss[NL80211_BSS_INFORMATION_ELEMENTS]) {
-        struct nlattr *ie = bss[NL80211_BSS_INFORMATION_ELEMENTS];
-        const unsigned char *data = (unsigned char *)nla_data(ie);
-        int data_len = nla_len(ie);
+    // INFORMATION ELEMENTS (優先使用 IES，不存在時退回使用 BEACON_IES)
+    struct nlattr *ie_attr = bss[NL80211_BSS_INFORMATION_ELEMENTS];
+    if (!ie_attr) {
+        ie_attr = bss[NL80211_BSS_BEACON_IES];
+    }
+    if (ie_attr) {
+        // struct nlattr *ie = bss[NL80211_BSS_INFORMATION_ELEMENTS];
+        const unsigned char *data = (unsigned char *)nla_data(ie_attr);
+        int data_len = nla_len(ie_attr);
 
         parse_beacon_ies(data , data_len, &detail);
     }
-
-    // 4. Add the parsed entry to the list
+    // 判定網路加密狀態 (解決 WEP 與 Open 的判定)
+    finalize_security_type(capability_info, &detail);
+    // Add the parsed entry to the list
     if (g_scan_results) {
         g_scan_results->append(detail);
     }
 
     return NL_OK;
 }
-#endif
+
 
 #ifdef Q_OS_ANDROID
 // ------------------------------------------------------------------
@@ -437,7 +507,7 @@ void WifiScanner::startScan(const QString &iface)
     scanTimer->restart();
 
     qDebug() << "--- Starting WiFi Scan on interface:" << iface << "---";
-    qDebug() << "--- (This may require root privileges) ---";
+    // qDebug() << "--- (This may require root privileges) ---";
 
     // Run the blocking Netlink code in a separate thread
     QThread *thread = QThread::create([this, iface]() {

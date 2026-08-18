@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 3.16)
 
 project(wifiscanner VERSION 0.1 LANGUAGES CXX)
 set(APP_NAME wifiscanner)
+set(TEST_APP_NAME tst_wifiscanner)
 
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
-
+# set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(WIN32)
     set(APP_ICON_RC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/wifiscan.rc")
@@ -26,7 +27,8 @@ endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
 find_package(Qt6 REQUIRED COMPONENTS QuickControls2 QuickTemplates2)
-find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui)
+find_package(Qt6 REQUIRED COMPONENTS Test)
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
 # qt_standard_project_setup(REQUIRES 6.5)
 # if (Qt6Core_FOUND)
@@ -36,24 +38,43 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 # else()
 #     message(SEND_ERROR "The Qt6Core library could not be found!")
 # endif()
-
+add_library(wifiscanner_core STATIC
+    src/wifiscanner.cpp
+    src/beaconmodel.cpp
+    src/utf8utils.cpp
+    src/wifiutils.cpp
+    src/beaconfilterproxymodel.cpp
+)
+set_target_properties(wifiscanner_core PROPERTIES
+    AUTOMOC ON
+    AUTOUIC ON
+    AUTORCC ON
+)
+target_sources(wifiscanner_core
+    PUBLIC
+        FILE_SET HEADERS
+        BASE_DIRS src
+        FILES src/wifiscanner.h src/beaconmodel.h
+        src/beacondetail.h
+        src/utf8utils.h
+        src/wifiutils.h
+        src/beaconfilterproxymodel.h
+        src/imageprovider.h
+        src/interfacemodel.h
+)
+target_include_directories(wifiscanner_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(wifiscanner_core PUBLIC Qt6::Core Qt6::Gui)
 #
 qt_add_executable(${APP_NAME} WIN32
     src/main.cpp
-    src/wifiscanner.h src/wifiscanner.cpp
-    src/beacondetail.h
-    src/beaconmodel.cpp src/beaconmodel.h
-    src/interfacemodel.h
-    src/imageprovider.h
-    src/utf8utils.cpp src/utf8utils.h
-    src/wifiutils.cpp src/wifiutils.h
-    src/beaconfilterproxymodel.cpp src/beaconfilterproxymodel.h
     ${APP_SOURCES}
 )
 qt_add_resources(wifiscan_resource_files wifiscan.qrc)
 target_sources(${APP_NAME} PRIVATE ${wifiscan_resource_files})
-
-target_link_libraries(${APP_NAME} PRIVATE Qt6::Core)
+target_link_libraries(${APP_NAME} PRIVATE wifiscanner_core
+    Qt6::Core
+    Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Gui
+)
 if(ANDROID)
     set_property(TARGET ${APP_NAME} PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/android)
     set(ANDROID_JAVA_SOURCES
@@ -76,6 +97,16 @@ qt_add_qml_module(${APP_NAME}
 
 )
 
+# unit test
+qt_add_executable(${TEST_APP_NAME}
+    test/tst_wifiscanner.cpp
+    ${APP_SOURCES}
+)
+target_sources(${TEST_APP_NAME} PRIVATE ${wifiscan_resource_files})
+target_include_directories(${TEST_APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(${TEST_APP_NAME} PRIVATE wifiscanner_core
+    Qt6::Core Qt6::Test)
+
 
 if (UNIX AND NOT ANDROID)
     # --- Find libnl and libnl-genl ---
@@ -84,12 +115,16 @@ if (UNIX AND NOT ANDROID)
 
     # 2. Use PkgConfig to find libnl-3.0 and libnl-genl-3.0
     # The variables PKG_NL_CINCLUDE_DIRS and PKG_NL_LIBRARIES will be populated
-    pkg_check_modules(NL REQUIRED libnl-3.0 libnl-genl-3.0)
+    pkg_check_modules(NL REQUIRED IMPORTED_TARGET libnl-3.0 libnl-genl-3.0)
     # Link Netlink components
-    target_include_directories(${APP_NAME} PRIVATE ${NL_INCLUDE_DIRS})
-    target_link_libraries(${APP_NAME} PRIVATE ${NL_LIBRARIES})
+    target_link_libraries(wifiscanner_core PUBLIC PkgConfig::NL)
+    target_compile_definitions(wifiscanner_core PUBLIC IS_DESKTOP_LINUX)
 
-    target_compile_definitions(${APP_NAME} PRIVATE IS_DESKTOP_LINUX)
+    # target_link_libraries(${APP_NAME} PRIVATE PkgConfig::NL)
+    # target_compile_definitions(${APP_NAME} PRIVATE IS_DESKTOP_LINUX)
+
+    # target_link_libraries(${TEST_APP_NAME} PRIVATE PkgConfig::NL)
+    # target_compile_definitions(${TEST_APP_NAME} PRIVATE IS_DESKTOP_LINUX)
     # install icon
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/images/wifiscan.png"
                 DESTINATION "share/icons/hicolor/256x256/apps"
@@ -128,13 +163,7 @@ set_target_properties(${APP_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-target_link_libraries(${APP_NAME}
-    PRIVATE
-      Qt6::Core
-      Qt6::Qml
-      Qt6::Quick
-      Qt6::QuickControls2
-)
+
 # target_link_libraries(${APP_NAME}
 #     PRIVATE
 #       Qt6::AndroidExtras
@@ -147,5 +176,3 @@ install(TARGETS ${APP_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(DIRECTORY images/ DESTINATION ${CMAKE_INSTALL_PREFIX}/images)
-# Optional: Set C++ standard
-#target_compile_features(${PROJECT_NAME} PRIVATE cxx_17)
