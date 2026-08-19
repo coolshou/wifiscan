@@ -29,6 +29,9 @@ find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
 find_package(Qt6 REQUIRED COMPONENTS QuickControls2 QuickTemplates2)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui)
 find_package(Qt6 REQUIRED COMPONENTS Test)
+
+set(CMAKE_POLICY_DEFAULT_QTP0001 NEW)
+
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
 # qt_standard_project_setup(REQUIRES 6.5)
 # if (Qt6Core_FOUND)
