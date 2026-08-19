@@ -1039,10 +1039,10 @@ void WifiScanner::fetchWindowsScanResults()
         beaconDetail.bssid = bssid;
         beaconDetail.ssid = ssid;
         beaconDetail.frequency = frequency;
-        beaconDetail.channel = WifiUtils::frequencyToChannel(detail.frequency);
+        beaconDetail.channel = WifiUtils::frequencyToChannel(frequency);
         beaconDetail.signal = signalDbm;
-        beaconDetail.authList = sec.auth;
-        beaconDetail.encryptionList = sec.cipher;
+        beaconDetail.authList = {sec.auth};
+        beaconDetail.encryptionList = {sec.cipher};
         results.append(beaconDetail);
     }
     if (pBssList != NULL) {
