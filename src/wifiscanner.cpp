@@ -8,9 +8,6 @@
 #include <QJsonObject>
 
 #if defined(Q_OS_WIN)
-#include <windows.h>
-#include <wlanapi.h>
-#pragma comment(lib, "wlanapi.lib")
 // Helper structures & converters
 struct SecurityInfo {
     QString auth = "Open";

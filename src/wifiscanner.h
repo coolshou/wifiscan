@@ -8,7 +8,11 @@
 
 #include "beacondetail.h"
 // #include "src/qmlbeacondetail.h"
-
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#include <wlanapi.h>
+#pragma comment(lib, "wlanapi.lib")
+#endif
 // 802.11 Information Element IDs
 #define WLAN_EID_SSID               0
 #define WLAN_EID_SUPP_RATES         1   // ID 1: Supported Rates
