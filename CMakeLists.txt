@@ -33,16 +33,13 @@ if(NOT EXISTS ${ICON_FILE_PATH})
     message(FATAL_ERROR "wifi.ico not found : ${ICON_FILE_PATH}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick QuickControls2
+    QuickTemplates2 Gui)
+find_package(Qt6 REQUIRED COMPONENTS Test)
 # Qt 6.5
 if(Qt6_VERSION VERSION_GREATER_EQUAL "6.5.0")
 qt_policy(SET QTP0001 OLD)
 endif()
-find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
-find_package(Qt6 REQUIRED COMPONENTS QuickControls2 QuickTemplates2)
-find_package(Qt6 REQUIRED COMPONENTS Gui)
-find_package(Qt6 REQUIRED COMPONENTS Test)
-
 
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
 # qt_standard_project_setup(REQUIRES 6.5)
