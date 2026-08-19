@@ -4,10 +4,18 @@ project(wifiscanner VERSION 0.1 LANGUAGES CXX)
 set(APP_NAME wifiscanner)
 set(TEST_APP_NAME tst_wifiscanner)
 
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOMOC ON)
 # set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Default to Release if CMAKE_BUILD_TYPE is empty (for single-config generators like Make/Ninja)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+endif()
+
+# Enable Qt's automatic build tools
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+
 if(WIN32)
     set(APP_ICON_RC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/wifiscan.rc")
     list(APPEND APP_SOURCES ${APP_ICON_RC_FILE})
