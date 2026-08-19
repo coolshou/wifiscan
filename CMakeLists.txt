@@ -36,11 +36,13 @@ endif()
 find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick QuickControls2
     QuickTemplates2 Gui)
 find_package(Qt6 REQUIRED COMPONENTS Test)
-# Qt 6.5
+
 if(Qt6_VERSION VERSION_GREATER_EQUAL "6.5.0")
 qt_policy(SET QTP0001 OLD)
 endif()
-
+if(Qt6_VERSION VERSION_GREATER_EQUAL "6.8.0")
+qt_policy(SET QTP0004 NEW)
+endif()
 # find_package(Qt6 REQUIRED COMPONENTS AndroidExtras)
 # qt_standard_project_setup(REQUIRES 6.5)
 # if (Qt6Core_FOUND)
