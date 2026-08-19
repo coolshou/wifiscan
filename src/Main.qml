@@ -442,6 +442,7 @@ ApplicationWindow {
             // model: beaconModel
             model: beaconFilterModel
             clip: true
+            flickableDirection: Flickable.VerticalFlick
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar {}
 
