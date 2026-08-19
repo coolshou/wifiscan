@@ -5,6 +5,7 @@
 #include <QIcon>
 #include <QQuickStyle>
 #include <QDirIterator>
+#include <QDebug>
 
 #include "wifiscanner.h"
 #include "beaconmodel.h"
@@ -76,10 +77,9 @@ int main(int argc, char *argv[])
     // 1. Register QmlBeaconDetail for use in ListView models
     qmlRegisterType<QmlBeaconDetail>("tw.idv.coolshou", 1, 0, "QmlBeaconDetail");
 #endif
-#ifdef IS_DESKTOP_LINUX
+
     qmlRegisterType<BeaconModel>("Wireless", 1, 0, "BeaconModel");
     engine.rootContext()->setContextProperty("beaconModel", model);
-#endif
     engine.rootContext()->setContextProperty("beaconFilterModel", filterProxy);
 
     // qmlRegisterType<InterfaceModel>("Wireless", 1, 0, "InterfaceModel");
