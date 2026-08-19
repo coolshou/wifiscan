@@ -90,6 +90,7 @@ ApplicationWindow {
             Layout.preferredHeight: 30
             height: 30
             spacing: 4
+            //bssid
             Rectangle {
                 Layout.preferredWidth: columnWidths["bssid"]
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
@@ -127,6 +128,7 @@ ApplicationWindow {
                     }
                 }
             }
+            //ssid
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
@@ -162,6 +164,7 @@ ApplicationWindow {
                     }
                 }
             }
+            //RSSI
             Rectangle {
                 Layout.preferredWidth: columnWidths["rssi"]
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
@@ -194,6 +197,7 @@ ApplicationWindow {
                     }
                 }
             }
+            //Freq
             Rectangle {
                 Layout.preferredWidth: columnWidths["freq"]
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
@@ -227,6 +231,7 @@ ApplicationWindow {
                     }
                 }
             }
+            //Auth
             Rectangle {
                 Layout.preferredWidth: columnWidths["auth"]
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
@@ -261,6 +266,7 @@ ApplicationWindow {
                     }
                 }
             }
+            //Encrypt
             Rectangle {
                 Layout.preferredWidth: columnWidths["encrypt"]
                 Layout.preferredHeight: filterRow.Layout.preferredHeight
@@ -268,7 +274,7 @@ ApplicationWindow {
                     id: filterEncrypt
                     anchors.fill: parent // <-- Fills the parent Rectangle
                     verticalAlignment: Text.AlignVCenter
-                    property string hintText: "Filter Auth"
+                    property string hintText: "Filter Encrypt"
                     text: hintText
                     color: "gray" // Placeholder color
                     onFocusChanged: {
