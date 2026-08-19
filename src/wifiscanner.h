@@ -50,11 +50,7 @@ public:
     Q_INVOKABLE bool isBusy() const;
 signals:
     // Signal emitted when the scan is complete
-#ifdef IS_DESKTOP_LINUX
     void scanFinished(const QList<BeaconDetail> &results);
-#else
-    void scanFinished(int count);
-#endif
     // Signal emitted on error
     void error(const QString &message);
     void busyChanged();

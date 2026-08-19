@@ -537,7 +537,7 @@ void WifiScanner::startScan(const QString &iface)
 #else
     // --- Other Platforms (Placeholder) ---
     emit error("Wi-Fi scanning is not implemented for this platform.");
-    emit scanFinished(0);
+    // emit scanFinished(0);
 #endif
 }
 
@@ -695,7 +695,7 @@ void WifiScanner::performNetlinkScan(const QString &iface)
     for (const auto &detail : results) {
         m_qobjectResults.append(new QmlBeaconDetail(detail));
     }
-    emit scanFinished(m_qobjectResults.size());
+    // emit scanFinished(m_qobjectResults.size());
 #endif
     // g_scan_results = nullptr;
     emit scanResultsChanged();
@@ -767,7 +767,7 @@ void WifiScanner::processJsonResults(const QString &jsonResult)
     }
 
     emit scanResultsChanged();
-    emit scanFinished(m_qobjectResults.size());
+    // emit scanFinished(m_qobjectResults.size());
 }
 #endif
 
