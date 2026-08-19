@@ -673,17 +673,21 @@ void WifiScanner::startScan(const QString &iface)
         NULL,
         NULL
         );
+    if (dwResult != ERROR_SUCCESS) {
+        WlanCloseHandle(m_hClient, NULL);
+        emit error("Failed WlanRegisterNotification.");
+        return;
+    }
     // Trigger async scan
     dwResult = WlanScan(m_hClient, &m_currentIfaceGuid, NULL, NULL, NULL);
-    this->setBusy(true);
-
-    // Clean up handle
-    // WlanCloseHandle(m_hClient, NULL);
-
     if (dwResult != ERROR_SUCCESS) {
         emit error(QString("Windows WlanScan failed with error code: %1").arg(dwResult));
         return;
     }
+    this->setBusy(true);
+
+    // Clean up handle
+    // WlanCloseHandle(m_hClient, NULL);
 
     qDebug() << "--- Windows Wi-Fi scan requested successfully on interface:" << iface << "---";
 #elif defined(IS_DESKTOP_LINUX)
@@ -1023,18 +1027,6 @@ void WifiScanner::fetchWindowsScanResults()
         // 5. Auth & Encryption
         SecurityDetails sec = parseBssIEs(bssEntry);
 
-        // (For detailed Auth/Encrypt names, cross-reference with WlanGetAvailableNetworkList)
-        // QString auth = "Unknown";
-        // QString encrypt = "Unknown";
-
-        // Map Dot11 Auth/Cipher algorithm enum to human-readable strings
-        // switch (bssEntry.dot11BssPhyType) {
-        // // Alternatively, mapped via Available Network List lookup below
-        // default: break;
-        // }
-
-        //auth
-        //encrypt
         BeaconDetail beaconDetail;
         beaconDetail.bssid = bssid;
         beaconDetail.ssid = ssid;

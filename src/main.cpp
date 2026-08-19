@@ -62,11 +62,11 @@ int main(int argc, char *argv[])
     filterProxy->setSourceModel(model);
 
     // Connect the error signal to report issues
-    // QObject::connect(scanner, &WifiScanner::error,
-    //                  [&app](const QString &message) {
-    //                      qCritical() << "\n!!! ERROR:" << message << "!!!";
-    //                      app.quit();
-    //                  });
+    QObject::connect(scanner, &WifiScanner::error,
+                     [&app](const QString &message) {
+                         qWarning() << "\n!!! ERROR:" << message << "!!!";
+                         // app.quit();
+                     });
 
     // Start the scan (runs in a separate thread)
     scanner->startScan(interfaceName);
