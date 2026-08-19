@@ -57,10 +57,9 @@ int main(int argc, char *argv[])
                                        QJniObject::fromString("WifiScannerProject").object());
 #endif
     // Connect the success signal to print results
-#ifdef IS_DESKTOP_LINUX
+
     BeaconModel *model = new BeaconModel(&app);
     QObject::connect(scanner, &WifiScanner::scanFinished, model, &BeaconModel::setBeacons);
-#endif
     BeaconFilterProxyModel *filterProxy = new BeaconFilterProxyModel(&app);
     filterProxy->setSourceModel(model);
 
