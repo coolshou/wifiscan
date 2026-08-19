@@ -354,7 +354,7 @@ void finalize_security_type(uint16_t capability_info, BeaconDetail *detail)
         }
     }
 }
-#endif
+
 // This function is called by nl_recvmsgs_default() for each BSS entry.
 static int handle_scan_result(struct nl_msg *msg, void *arg)
 {
@@ -433,7 +433,7 @@ static int handle_scan_result(struct nl_msg *msg, void *arg)
 
     return NL_OK;
 }
-
+#endif
 
 #ifdef Q_OS_ANDROID
 // ------------------------------------------------------------------

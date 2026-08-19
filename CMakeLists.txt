@@ -120,11 +120,6 @@ if (UNIX AND NOT ANDROID)
     target_link_libraries(wifiscanner_core PUBLIC PkgConfig::NL)
     target_compile_definitions(wifiscanner_core PUBLIC IS_DESKTOP_LINUX)
 
-    # target_link_libraries(${APP_NAME} PRIVATE PkgConfig::NL)
-    # target_compile_definitions(${APP_NAME} PRIVATE IS_DESKTOP_LINUX)
-
-    # target_link_libraries(${TEST_APP_NAME} PRIVATE PkgConfig::NL)
-    # target_compile_definitions(${TEST_APP_NAME} PRIVATE IS_DESKTOP_LINUX)
     # install icon
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/images/wifiscan.png"
                 DESTINATION "share/icons/hicolor/256x256/apps"
