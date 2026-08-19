@@ -7,6 +7,11 @@
 #include <QJsonValue>
 #include <QJsonObject>
 
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#include <wlanapi.h>
+#pragma comment(lib, "wlanapi.lib")
+#endif
 // #if defined(__linux__) && !defined(__ANDROID__)
     // #define IS_DESKTOP_LINUX
 #ifdef IS_DESKTOP_LINUX
@@ -805,6 +810,37 @@ QStringList WifiScanner::getWirelessInterfaces()
     } else {
         return QStringList();
     }
+#elif defined(Q_OS_WIN)
+    // --- Windows Native Wifi API ---
+    QStringList interfaces;
+    HANDLE hClient = NULL;
+    DWORD dwMaxClient = 2; // Client version for Windows Vista / 7 and higher
+    DWORD dwCurVersion = 0;
+
+    DWORD dwResult = WlanOpenHandle(dwMaxClient, NULL, &dwCurVersion, &hClient);
+    if (dwResult != ERROR_SUCCESS) {
+        return interfaces;
+    }
+
+    PWLAN_INTERFACE_INFO_LIST pIfList = NULL;
+    dwResult = WlanEnumInterfaces(hClient, NULL, &pIfList);
+    if (dwResult == ERROR_SUCCESS && pIfList != NULL) {
+        for (DWORD i = 0; i < pIfList->dwNumberOfItems; i++) {
+            PWLAN_INTERFACE_INFO pIfInfo = (WLAN_INTERFACE_INFO *)&pIfList->InterfaceInfo[i];
+
+            // Convert WCHAR description (e.g., "Intel(R) Wi-Fi 6 AX201 160MHz") to QString
+            QString interfaceName = QString::fromWCharArray(pIfInfo->strInterfaceDescription);
+            interfaces.append(interfaceName);
+        }
+    }
+
+    // Free resources
+    if (pIfList != NULL) {
+        WlanFreeMemory(pIfList);
+    }
+    WlanCloseHandle(hClient, NULL);
+
+    return interfaces;
 #elif defined(IS_DESKTOP_LINUX)
     QStringList interfaces;
 
