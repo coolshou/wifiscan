@@ -9,9 +9,9 @@
 
 #if defined(Q_OS_WIN)
 // Helper structures & converters
-struct SecurityInfo {
+struct SecurityDetails {
     QString auth = "Open";
-    QString cipher = "None";
+    QString cipher = "";
 };
 
 static QString getAuthName(DOT11_AUTH_ALGORITHM authAlgo) {
@@ -617,25 +617,24 @@ void WifiScanner::startScan(const QString &iface)
 
 #if defined(Q_OS_WIN)
     // --- Windows Native Wifi API ---
-    HANDLE hClient = NULL;
+    // HANDLE hClient = NULL;
     DWORD dwMaxClient = 2;
     DWORD dwCurVersion = 0;
 
-    DWORD dwResult = WlanOpenHandle(dwMaxClient, NULL, &dwCurVersion, &hClient);
+    DWORD dwResult = WlanOpenHandle(dwMaxClient, NULL, &dwCurVersion, &m_hClient);
     if (dwResult != ERROR_SUCCESS) {
         emit error("Windows WLAN API initialization failed.");
         return;
     }
 
     PWLAN_INTERFACE_INFO_LIST pIfList = NULL;
-    dwResult = WlanEnumInterfaces(hClient, NULL, &pIfList);
+    dwResult = WlanEnumInterfaces(m_hClient, NULL, &pIfList);
     if (dwResult != ERROR_SUCCESS || pIfList == NULL) {
-        WlanCloseHandle(hClient, NULL);
+        WlanCloseHandle(m_hClient, NULL);
         emit error("Failed to enumerate Windows wireless interfaces.");
         return;
     }
 
-    GUID selectedInterfaceGuid;
     bool found = false;
 
     // Match selected interface name or GUID with enumerated interfaces
@@ -644,7 +643,7 @@ void WifiScanner::startScan(const QString &iface)
         QString desc = QString::fromWCharArray(pIfInfo->strInterfaceDescription);
 
         if (desc == iface) {
-            selectedInterfaceGuid = pIfInfo->InterfaceGuid;
+            m_currentIfaceGuid = pIfInfo->InterfaceGuid;
             found = true;
             break;
         }
@@ -652,7 +651,7 @@ void WifiScanner::startScan(const QString &iface)
 
     if (!found && pIfList->dwNumberOfItems > 0) {
         // Fallback: If no match found by description, pick the first interface
-        selectedInterfaceGuid = pIfList->InterfaceInfo[0].InterfaceGuid;
+        m_currentIfaceGuid = pIfList->InterfaceInfo[0].InterfaceGuid;
         found = true;
     }
 
@@ -661,12 +660,12 @@ void WifiScanner::startScan(const QString &iface)
     }
 
     if (!found) {
-        WlanCloseHandle(hClient, NULL);
+        WlanCloseHandle(m_hClient, NULL);
         emit error("Target wireless interface not found on Windows.");
         return;
     }
-    DWORD dwResult = WlanRegisterNotification(
-        hClient,
+    dwResult = WlanRegisterNotification(
+        m_hClient,
         WLAN_NOTIFICATION_SOURCE_ACM,
         TRUE,
         (WLAN_NOTIFICATION_CALLBACK)WlanNotificationCallback,
@@ -675,11 +674,11 @@ void WifiScanner::startScan(const QString &iface)
         NULL
         );
     // Trigger async scan
-    dwResult = WlanScan(hClient, &selectedInterfaceGuid, NULL, NULL, NULL);
+    dwResult = WlanScan(m_hClient, &m_currentIfaceGuid, NULL, NULL, NULL);
     this->setBusy(true);
 
     // Clean up handle
-    WlanCloseHandle(hClient, NULL);
+    // WlanCloseHandle(m_hClient, NULL);
 
     if (dwResult != ERROR_SUCCESS) {
         emit error(QString("Windows WlanScan failed with error code: %1").arg(dwResult));

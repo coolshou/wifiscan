@@ -79,6 +79,8 @@ private:
     // 1. Declare a static C-style callback function
     static VOID WINAPI WlanNotificationCallback(PWLAN_NOTIFICATION_DATA pNotifData, PVOID pContext);
     void fetchWindowsScanResults();
+    HANDLE m_hClient = NULL;
+    GUID m_currentIfaceGuid;
 #endif
     void setBusy(bool value);
     QString decodeSsid(const QByteArray &raw);
