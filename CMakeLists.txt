@@ -66,9 +66,10 @@ set_target_properties(wifiscanner_core PROPERTIES
 )
 target_sources(wifiscanner_core
     PUBLIC
-        FILE_SET HEADERS
-        BASE_DIRS src
-        FILES src/wifiscanner.h src/beaconmodel.h
+    FILE_SET HEADERS
+    BASE_DIRS src
+    FILES
+        src/wifiscanner.h src/beaconmodel.h
         src/beacondetail.h
         src/utf8utils.h
         src/wifiutils.h
@@ -106,9 +107,9 @@ endif()
 qt_add_qml_module(${APP_NAME}
     URI ${APP_NAME}
     VERSION 1.0
-    QML_FILES src/Main.qml
-    QML_FILES src/Detail.qml
-
+    QML_FILES
+        src/Main.qml
+        src/Detail.qml
 )
 
 # unit test
