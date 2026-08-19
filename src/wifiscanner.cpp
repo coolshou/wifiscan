@@ -11,6 +11,113 @@
 #include <windows.h>
 #include <wlanapi.h>
 #pragma comment(lib, "wlanapi.lib")
+// Helper structures & converters
+struct SecurityInfo {
+    QString auth = "Open";
+    QString cipher = "None";
+};
+
+static QString getAuthName(DOT11_AUTH_ALGORITHM authAlgo) {
+    switch (authAlgo) {
+    case DOT11_AUTH_ALGO_80211_OPEN: return "Open";
+    case DOT11_AUTH_ALGO_80211_SHARED_KEY: return "WEP";
+    case DOT11_AUTH_ALGO_WPA: return "WPA-Enterprise";
+    case DOT11_AUTH_ALGO_WPA_PSK: return "WPA-Personal";
+    case DOT11_AUTH_ALGO_RSNA: return "WPA2-Enterprise";
+    case DOT11_AUTH_ALGO_RSNA_PSK: return "WPA2-Personal";
+    case DOT11_AUTH_ALGO_WPA3: return "WPA3-Enterprise";
+    case DOT11_AUTH_ALGO_WPA3_SAE: return "WPA3-Personal";
+    case DOT11_AUTH_ALGO_OWE: return "Enhanced-Open";
+    default: return "Unknown";
+    }
+}
+
+static QString getCipherName(DOT11_CIPHER_ALGORITHM cipherAlgo) {
+    switch (cipherAlgo) {
+    case DOT11_CIPHER_ALGO_NONE: return "None";
+    case DOT11_CIPHER_ALGO_WEP40: return "WEP40";
+    case DOT11_CIPHER_ALGO_TKIP: return "TKIP";
+    case DOT11_CIPHER_ALGO_CCMP: return "AES (CCMP)";
+    case DOT11_CIPHER_ALGO_WEP104: return "WEP104";
+    case DOT11_CIPHER_ALGO_BIP: return "BIP";
+    case DOT11_CIPHER_ALGO_GCMP: return "GCMP";
+    default: return "Unknown";
+    }
+}
+// Helper: Parse raw 802.11 Information Elements (IEs)
+SecurityDetails parseBssIEs(const WLAN_BSS_ENTRY &bssEntry)
+{
+    SecurityDetails sec;
+
+    if (bssEntry.ulIeSize == 0) {
+        return sec;
+    }
+
+    // Pointer to start of Information Elements
+    const BYTE *pIEs = (const BYTE *)&bssEntry + bssEntry.ulIeOffset;
+    DWORD ieSize = bssEntry.ulIeSize;
+    DWORD offset = 0;
+
+    bool hasRsn = false;  // RSN (WPA2/WPA3) - Tag 0x30 (48)
+    bool hasWpa = false;  // WPA1 - Tag 0xDD (221) with OUI 00:50:F2:01
+
+    while (offset + 2 <= ieSize) {
+        BYTE elementId = pIEs[offset];
+        BYTE length = pIEs[offset + 1];
+
+        if (offset + 2 + length > ieSize) break; // Out of bounds safety check
+
+        const BYTE *pBody = &pIEs[offset + 2];
+
+        // -------------------------------------------------------------
+        // 1. Check for RSN IE (WPA2 / WPA3) -> Tag 0x30 (48)
+        // -------------------------------------------------------------
+        if (elementId == 0x30) {
+            hasRsn = true;
+
+            // Basic RSN parsing
+            sec.auth = "WPA2-Personal";
+            sec.cipher = "AES (CCMP)";
+
+            // Check if RSN body contains WPA3/SAE flags or Suite selectors
+            if (length >= 8) {
+                // If the Auth Suite list contains AKM type 8 (SAE / WPA3)
+                // You can inspect AKM suites inside pBody if deep parsing is needed
+            }
+        }
+        // -------------------------------------------------------------
+        // 2. Check for Vendor Specific IE (WPA1) -> Tag 0xDD (221)
+        // -------------------------------------------------------------
+        else if (elementId == 0xDD && length >= 6) {
+            // Check for Microsoft WPA OUI: 00:50:F2:01
+            if (pBody[0] == 0x00 && pBody[1] == 0x50 && pBody[2] == 0xF2 && pBody[3] == 0x01) {
+                hasWpa = true;
+                if (!hasRsn) {
+                    sec.auth = "WPA-Personal";
+                    sec.cipher = "TKIP";
+                }
+            }
+        }
+
+        offset += 2 + length;
+    }
+
+    // -------------------------------------------------------------
+    // 3. Fallback: Check Capability Information for WEP / Open
+    // -------------------------------------------------------------
+    if (!hasRsn && !hasWpa) {
+        // Bit 4 of Capability Information indicates Privacy (WEP)
+        if (bssEntry.usCapabilityInformation & 0x0010) {
+            sec.auth = "WEP";
+            sec.cipher = "WEP";
+        } else {
+            sec.auth = "Open";
+            sec.cipher = "None";
+        }
+    }
+
+    return sec;
+}
 #endif
 // #if defined(__linux__) && !defined(__ANDROID__)
     // #define IS_DESKTOP_LINUX
@@ -333,6 +440,7 @@ void parse_beacon_ies(const unsigned char *data, int data_len, BeaconDetail *det
 }
 
 
+
 #ifdef IS_DESKTOP_LINUX
 // --- Netlink Callback Function ---
 
@@ -504,13 +612,85 @@ void WifiScanner::startScan(const QString &iface)
         emit error("--- Not set interface ---");
         return;
     }
-#ifdef IS_DESKTOP_LINUX
     if (scanTimer->isValid() && scanTimer->elapsed() < scanCooldownMs) {
         emit error("Scan blocked: cooldown active");
         return;
     }
     scanTimer->restart();
 
+#if defined(Q_OS_WIN)
+    // --- Windows Native Wifi API ---
+    HANDLE hClient = NULL;
+    DWORD dwMaxClient = 2;
+    DWORD dwCurVersion = 0;
+
+    DWORD dwResult = WlanOpenHandle(dwMaxClient, NULL, &dwCurVersion, &hClient);
+    if (dwResult != ERROR_SUCCESS) {
+        emit error("Windows WLAN API initialization failed.");
+        return;
+    }
+
+    PWLAN_INTERFACE_INFO_LIST pIfList = NULL;
+    dwResult = WlanEnumInterfaces(hClient, NULL, &pIfList);
+    if (dwResult != ERROR_SUCCESS || pIfList == NULL) {
+        WlanCloseHandle(hClient, NULL);
+        emit error("Failed to enumerate Windows wireless interfaces.");
+        return;
+    }
+
+    GUID selectedInterfaceGuid;
+    bool found = false;
+
+    // Match selected interface name or GUID with enumerated interfaces
+    for (DWORD i = 0; i < pIfList->dwNumberOfItems; i++) {
+        PWLAN_INTERFACE_INFO pIfInfo = (WLAN_INTERFACE_INFO *)&pIfList->InterfaceInfo[i];
+        QString desc = QString::fromWCharArray(pIfInfo->strInterfaceDescription);
+
+        if (desc == iface) {
+            selectedInterfaceGuid = pIfInfo->InterfaceGuid;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found && pIfList->dwNumberOfItems > 0) {
+        // Fallback: If no match found by description, pick the first interface
+        selectedInterfaceGuid = pIfList->InterfaceInfo[0].InterfaceGuid;
+        found = true;
+    }
+
+    if (pIfList != NULL) {
+        WlanFreeMemory(pIfList);
+    }
+
+    if (!found) {
+        WlanCloseHandle(hClient, NULL);
+        emit error("Target wireless interface not found on Windows.");
+        return;
+    }
+    DWORD dwResult = WlanRegisterNotification(
+        hClient,
+        WLAN_NOTIFICATION_SOURCE_ACM,
+        TRUE,
+        (WLAN_NOTIFICATION_CALLBACK)WlanNotificationCallback,
+        this, // Context pointer to your class instance
+        NULL,
+        NULL
+        );
+    // Trigger async scan
+    dwResult = WlanScan(hClient, &selectedInterfaceGuid, NULL, NULL, NULL);
+    this->setBusy(true);
+
+    // Clean up handle
+    WlanCloseHandle(hClient, NULL);
+
+    if (dwResult != ERROR_SUCCESS) {
+        emit error(QString("Windows WlanScan failed with error code: %1").arg(dwResult));
+        return;
+    }
+
+    qDebug() << "--- Windows Wi-Fi scan requested successfully on interface:" << iface << "---";
+#elif defined(IS_DESKTOP_LINUX)
     qDebug() << "--- Starting WiFi Scan on interface:" << iface << "---";
     // qDebug() << "--- (This may require root privileges) ---";
 
@@ -776,6 +956,105 @@ void WifiScanner::processJsonResults(const QString &jsonResult)
 }
 #endif
 
+#endif
+
+#ifdef Q_OS_WIN
+// Callback function signature for Windows API
+VOID WINAPI WifiScanner::WlanNotificationCallback(PWLAN_NOTIFICATION_DATA pNotifData, PVOID pContext)
+{
+    if (pNotifData && pNotifData->NotificationSource == WLAN_NOTIFICATION_SOURCE_ACM) {
+        if (pNotifData->NotificationCode == wlan_notification_acm_scan_complete) {
+            // Retrieve interface GUID from context or notification data
+            GUID* pIfaceGuid = (GUID*)pNotifData->pData;
+
+            // Re-route back to Qt thread to execute safely
+            WifiScanner* scanner = static_cast<WifiScanner*>(pContext);
+            QMetaObject::invokeMethod(scanner, "fetchWindowsScanResults", Qt::QueuedConnection);
+        }
+    }
+}
+void WifiScanner::fetchWindowsScanResults()
+{
+    QList<BeaconDetail> results;
+
+    PWLAN_BSS_LIST pBssList = NULL;
+
+    // Fetch detailed BSS list (Access Points with BSSID and Frequency)
+    DWORD dwResult = WlanGetNetworkBssList(
+        m_hClient,
+        &m_currentIfaceGuid,
+        NULL,                   // pDot11Ssid: NULL retrieves all SSIDs
+        dot11_BSS_type_any,     // BSS type
+        FALSE,                  // bSecurityEnabled
+        NULL,                   // Reserved
+        &pBssList
+        );
+
+    if (dwResult != ERROR_SUCCESS || pBssList == NULL) {
+        emit error("Failed to retrieve Windows Wi-Fi BSS list.");
+        return;
+    }
+
+    for (DWORD i = 0; i < pBssList->dwNumberOfItems; i++) {
+        WLAN_BSS_ENTRY bssEntry = pBssList->wlanBssEntries[i];
+
+        // 1. BSSID (MAC Address)
+        QString bssid = QString("%1:%2:%3:%4:%5:%6")
+                            .arg(bssEntry.dot11Bssid[0], 2, 16, QChar('0'))
+                            .arg(bssEntry.dot11Bssid[1], 2, 16, QChar('0'))
+                            .arg(bssEntry.dot11Bssid[2], 2, 16, QChar('0'))
+                            .arg(bssEntry.dot11Bssid[3], 2, 16, QChar('0'))
+                            .arg(bssEntry.dot11Bssid[4], 2, 16, QChar('0'))
+                            .arg(bssEntry.dot11Bssid[5], 2, 16, QChar('0'))
+                            .toUpper();
+
+        // 2. SSID
+        QString ssid = QString::fromUtf8((char *)bssEntry.dot11Ssid.ucSSID,
+                                         bssEntry.dot11Ssid.uSSIDLength);
+        if (ssid.isEmpty()) {
+            ssid = "<Hidden>";
+        }
+
+        // 3. Frequency (kHz to MHz)
+        // ulChCenterFrequency is stored in kHz (e.g., 2412000 kHz = 2412 MHz)
+        int frequency = bssEntry.ulChCenterFrequency / 1000;
+
+        // 4. Signal (Percentage 0-100% converted to dBm estimate)
+        // bssEntry.lRssi gives exact dBm signal strength directly!
+        int signalDbm = bssEntry.lRssi; // e.g., -65 dBm
+        ULONG signalQuality = bssEntry.uLinkQuality; // 0 to 100%
+
+        // 5. Auth & Encryption
+        SecurityDetails sec = parseBssIEs(bssEntry);
+
+        // (For detailed Auth/Encrypt names, cross-reference with WlanGetAvailableNetworkList)
+        // QString auth = "Unknown";
+        // QString encrypt = "Unknown";
+
+        // Map Dot11 Auth/Cipher algorithm enum to human-readable strings
+        // switch (bssEntry.dot11BssPhyType) {
+        // // Alternatively, mapped via Available Network List lookup below
+        // default: break;
+        // }
+
+        //auth
+        //encrypt
+        BeaconDetail beaconDetail;
+        beaconDetail.bssid = bssid;
+        beaconDetail.ssid = ssid;
+        beaconDetail.frequency = frequency;
+        beaconDetail.channel = WifiUtils::frequencyToChannel(detail.frequency);
+        beaconDetail.signal = signalDbm;
+        beaconDetail.authList = sec.auth;
+        beaconDetail.encryptionList = sec.cipher;
+        results.append(beaconDetail);
+    }
+    if (pBssList != NULL) {
+        WlanFreeMemory(pBssList);
+    }
+    emit scanFinished(results);
+    this->setBusy(false);
+}
 #endif
 
 void WifiScanner::setBusy(bool value)

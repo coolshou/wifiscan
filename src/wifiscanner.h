@@ -71,7 +71,11 @@ private:
     void setupAndroidJniCallback();
     void processJsonResults(const QString &jsonResult);
 #endif
-
+#ifdef Q_OS_WIN
+    // 1. Declare a static C-style callback function
+    static VOID WINAPI WlanNotificationCallback(PWLAN_NOTIFICATION_DATA pNotifData, PVOID pContext);
+    void fetchWindowsScanResults();
+#endif
     void setBusy(bool value);
     QString decodeSsid(const QByteArray &raw);
     bool m_busy = false;
