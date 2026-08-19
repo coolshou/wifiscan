@@ -7,9 +7,7 @@
 #include <QDirIterator>
 
 #include "wifiscanner.h"
-#ifdef IS_DESKTOP_LINUX
 #include "beaconmodel.h"
-#endif
 #include "beaconfilterproxymodel.h"
 #include "interfacemodel.h"
 #include "imageprovider.h"
